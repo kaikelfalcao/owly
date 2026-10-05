@@ -31,6 +31,8 @@ class CreateOwnerTest extends TestCase
 
         $entry = AuditEntry::where('action', 'accounts.owner_created')->sole();
         $this->assertSame($user->organization_id, $entry->organization_id);
+        $this->assertSame('console', $entry->channel);
+        $this->assertNull($entry->ip);
     }
 
     public function test_an_existing_email_is_refused(): void

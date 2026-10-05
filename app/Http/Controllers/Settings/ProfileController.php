@@ -30,6 +30,7 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request, Audit $audit): RedirectResponse
     {
         $request->user()->fill($request->validated());
+        $nameChanged = $request->user()->isDirty('name');
         $emailChanged = $request->user()->isDirty('email');
 
         if ($emailChanged) {
@@ -38,8 +39,13 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
+        // Nome e e-mail são dado pessoal: a auditoria guarda que mudaram, não o valor.
+        if ($nameChanged) {
+            $audit->record('accounts.name_changed', $request->user(), changes: ['name' => Audit::HIDDEN]);
+        }
+
         if ($emailChanged) {
-            $audit->record('accounts.email_changed', $request->user());
+            $audit->record('accounts.email_changed', $request->user(), changes: ['email' => Audit::HIDDEN]);
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Profile updated.')]);
