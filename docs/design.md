@@ -13,7 +13,7 @@ Base: o tema **Minimal Neutral** do tweakcn, sem mudanças (cinzas puros, DM San
 
 - Âmbar e laranja são sempre fundo com texto escuro por cima (`text-highlight-foreground`); texto âmbar sobre branco não tem contraste.
 - `--accent` continua cinza, como no tweakcn: é o fundo de hover do shadcn.
-- Nunca hex solto no TSX. A exceção é a coruja (`components/app-logo-icon.tsx`), que tem as cores fixas da marca.
+- Nunca hex solto no TSX. A exceção é o nome "owly" (`components/app-logo.tsx`), no azul-marinho da marca.
 
 ## Tipografia
 
@@ -25,8 +25,11 @@ Fontes vêm do npm (`@fontsource-variable/*`), sem depender de serviço de fonte
 
 ## Marca
 
-- A coruja simplificada em SVG está em `components/app-logo-icon.tsx` e em `public/favicon.svg`. A ilustração original (gerada no ChatGPT) é referência; a versão final em vetor ainda vai ser feita.
-- O nome é texto (`font-brand`), não imagem, para trocar de cor no modo escuro.
+- A marca é a ilustração enviada pelo Kaíke em 05/10/2026 (original em `/mnt/project-files/owly/marca/owly-marca-v2-original.png`, fora do repositório).
+- `public/images/owly-icone.png`: a cabeça da coruja, para o menu, o favicon (`favicon.ico`, `favicon-32.png`) e o ícone de app (`apple-touch-icon.png`). Componente `AppLogoIcon`.
+- `public/images/owly-coruja.png`: a coruja inteira, para a tela de entrar e as telas vazias. Componente `OwlyMascot`.
+- São PNG recortados da ilustração. Quando existir a versão em vetor, ela substitui os dois arquivos sem mexer nos componentes.
+- O nome é texto (`font-brand`), não imagem: azul-marinho no tema claro, cor do texto no escuro.
 
 ## Ícones e imagens
 
