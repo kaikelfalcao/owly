@@ -192,7 +192,7 @@ export default function BusinessHours(props: Props) {
                                                 date: e.target.value,
                                             })
                                         }
-                                        className="w-40 font-mono"
+                                        className="w-40 shrink-0 font-mono"
                                         aria-label="Data do feriado"
                                         required
                                     />

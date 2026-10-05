@@ -359,17 +359,19 @@ export default function Dashboard(props: Props) {
                             .
                         </p>
                         {props.health.gaps.length > 0 && (
-                            <p className="flex items-center gap-2">
-                                <CalendarX2 className="size-4 text-highlight-foreground" />
-                                Dias sem nenhuma mensagem no zip:{' '}
-                                {props.health.gaps
-                                    .map((g) =>
-                                        g.from === g.to
-                                            ? day(g.from)
-                                            : `${day(g.from)} a ${day(g.to)}`,
-                                    )
-                                    .join(', ')}
-                                . Os números desses dias podem estar baixos.
+                            <p className="flex items-start gap-2">
+                                <CalendarX2 className="mt-0.5 size-4 shrink-0 text-highlight-foreground dark:text-highlight" />
+                                <span>
+                                    Dias sem nenhuma mensagem no zip:{' '}
+                                    {props.health.gaps
+                                        .map((g) =>
+                                            g.from === g.to
+                                                ? day(g.from)
+                                                : `${day(g.from)} a ${day(g.to)}`,
+                                        )
+                                        .join(', ')}
+                                    . Os números desses dias podem estar baixos.
+                                </span>
                             </p>
                         )}
                     </section>
@@ -395,7 +397,9 @@ function Attention({
             href={href}
             className="flex items-start gap-3 rounded-2xl border border-highlight bg-highlight/15 p-4 transition-colors hover:bg-highlight/25 [&_svg]:size-5"
         >
-            <span className="mt-0.5 text-highlight-foreground">{icon}</span>
+            <span className="mt-0.5 text-highlight-foreground dark:text-highlight">
+                {icon}
+            </span>
             <span className="flex-1">
                 <span className="block font-medium">{title}</span>
                 <span className="block text-sm text-muted-foreground">
