@@ -71,3 +71,8 @@ export function monthLabel(iso: string, timeZone?: string): string {
 export function dayKey(iso: string, timeZone?: string): string {
     return new Date(iso).toLocaleDateString('en-CA', { timeZone });
 }
+
+/** "5 de outubro de 2026 às 14:32:07", com segundos, para investigar. */
+export function fullDateTime(iso: string, timeZone?: string): string {
+    return format(iso, timeZone, { dateStyle: 'long', timeStyle: 'medium' });
+}

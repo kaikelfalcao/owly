@@ -9,6 +9,7 @@ use App\Platform\Telemetry\TraceQueries;
 use App\Platform\Telemetry\TraceQueueJobs;
 use Illuminate\Auth\Events\Authenticated;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -32,6 +33,12 @@ class PlatformServiceProvider extends ServiceProvider
         // Toda linha de log daqui em diante sabe quem estava logado.
         Event::listen(Authenticated::class, function (Authenticated $event): void {
             Context::add('user_id', $event->user->getAuthIdentifier());
+        });
+
+        // Logs e auditoria sabem que a ação veio de uma tarefa da fila, com
+        // a telemetria ligada ou não.
+        Event::listen(JobProcessing::class, function (JobProcessing $event): void {
+            Context::add('job', class_basename($event->job->resolveName()));
         });
 
         Event::subscribe(RecordAuthActivity::class);

@@ -24,5 +24,8 @@ Route::middleware(['auth'])->prefix('conta')->group(function () {
 
     Route::inertia('aparencia', 'settings/appearance')->name('appearance.edit');
 
-    Route::get('atividade', ActivityController::class)->name('activity.index');
+    Route::get('atividade', [ActivityController::class, 'index'])->name('activity.index');
+    Route::get('atividade/exportar', [ActivityController::class, 'export'])
+        ->middleware('throttle:10,1')
+        ->name('activity.export');
 });

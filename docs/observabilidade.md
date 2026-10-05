@@ -10,7 +10,7 @@ Pensadas desde o primeiro dia e entregues no passo 2 do escopo (o código está 
 | Rastros     | OpenTelemetry em cada requisição, tarefa da fila e consulta; a importação vira um rastro com uma etapa por arquivo | quem procura onde demorou          |
 | Métricas    | duração e volume de cada importação, linhas rejeitadas, atraso da fila, tempo de resposta; custo e tokens da IA    | painel do Grafana                  |
 | Dev         | contêiner `grafana/otel-lgtm` no `docker compose` (Grafana, Loki, Tempo e Prometheus juntos)                       | quem desenvolve                    |
-| Auditoria   | tabela só de inclusão: quem, o quê, quando, IP e sobre qual registro                                               | o dono, em Minha conta › Atividade |
+| Auditoria   | tabela só de inclusão: quem, o quê, quando, sobre qual registro, de onde (canal, IP, navegador) e o que mudou      | o dono, em Minha conta › Atividade |
 | Importações | cada importação é um registro com estado, contagens, erros por arquivo e a assinatura do zip                       | o dono, na tela Importar           |
 
 Primeiras ações auditadas: entrar, falha ao entrar, trocar senha, ligar ou desligar duas etapas, importação iniciada, concluída e com erro, conexão de IA criada ou removida, pergunta feita à IA.
@@ -18,7 +18,10 @@ Primeiras ações auditadas: entrar, falha ao entrar, trocar senha, ligar ou des
 ## Como usar no código
 
 - **Log:** `Log::info('importação concluída', ['import_id' => $import->id, 'files' => 12])`. O canal padrão (`json`) já junta `request_id`, `trace_id`, `user_id` e, na fila, `job`. Campos com cara de dado pessoal (`email`, `phone`, `name`, `body`, `token`…) saem como `[removido]` (`ScrubPersonalData`), mas a regra é não mandar.
-- **Auditoria:** `app(Audit::class)->record('imports.finished', $import, ['files' => 12])`. A ação segue `area.acao`; `meta` aceita só números, booleanos e códigos curtos em minúsculas, e recusa o resto com erro. A tabela `audit_entries` não aceita alteração nem exclusão.
+- **Auditoria:** `app(Audit::class)->record('imports.finished', $import, ['files' => 12])`. A ação segue `area.acao`; `meta` aceita só números, booleanos e códigos curtos em minúsculas, e recusa o resto com erro. A tabela `audit_entries` não aceita alteração nem exclusão, nem um registro por vez nem em lote (`AppendOnlyBuilder`); a aplicação não tem rota que mexa nela.
+- **O que mudou:** `changes: ['provider' => ['gemini', 'claude']]` guarda antes e depois, com a mesma regra de `meta`. Campo com dado pessoal (nome, e-mail) entra como `Audit::HIDDEN`: fica registrado que mudou, sem o valor.
+- **Quem e sobre o quê:** `user_id` é quem fez (vazio numa tentativa de entrar sem login); o registro afetado vai como `$subject`. Canal (`web`, `console`, `queue`), IP e navegador são preenchidos sozinhos; fora do navegador não há IP nem navegador.
+- **Catálogo:** toda ação nova entra em `AuditCatalog` com o texto da tela, a criticidade (Normal, Importante, Crítico) e, se for uma falha, o resultado. Criticidade e resultado saem do catálogo, não são gravados: reclassificar vale para o histórico todo.
 - **Rastro de uma etapa:** `app(Telemetry::class)->tracer()->spanBuilder('ler arquivo')->startSpan()` e `->end()` no fim. Requisições, tarefas da fila e consultas ao banco já viram rastro sozinhas (a consulta vai com os `?`, sem os valores).
 - **Métrica:** `app(Telemetry::class)->histogram('owly.imports.duration', 's', 'Duração das importações')->record($segundos, ['outcome' => 'ok'])`. Atributos são códigos de poucos valores; nunca ids, para não criar uma série por registro.
 
@@ -32,6 +35,28 @@ Sem `OTEL_EXPORTER_OTLP_ENDPOINT` a telemetria fica desligada e nada sai da apli
 
 ## Já auditado
 
-`auth.login`, `auth.logout`, `auth.failed` (com `known_user`, nunca o e-mail digitado), `auth.password_reset`, `auth.password_changed`, `auth.two_factor_enabled`, `auth.two_factor_disabled`, `auth.two_factor_failed`, `auth.recovery_codes_generated`, `imports.started` (com `size`), `imports.finished` (com `files`, `conversations_new`, `messages_new`, `problems`) e `imports.failed` (com `code`). Nome do arquivo nunca vai para a auditoria. As ações de IA entram com o passo delas.
+| Ação                            | Criticidade | Observação                                               |
+| ------------------------------- | ----------- | -------------------------------------------------------- |
+| `auth.login`, `auth.logout`     | Normal      | `remember` no login                                      |
+| `auth.failed`                   | Importante  | falha; `known_user`, nunca o e-mail digitado             |
+| `auth.two_factor_failed`        | Importante  | falha                                                    |
+| `auth.password_reset`           | Importante  |                                                          |
+| `auth.password_changed`         | Importante  |                                                          |
+| `auth.recovery_codes_generated` | Importante  |                                                          |
+| `auth.two_factor_enabled`       | Normal      |                                                          |
+| `auth.two_factor_disabled`      | Crítico     | a conta fica mais fácil de invadir                       |
+| `accounts.owner_created`        | Normal      | pelo comando `owly:owner`                                |
+| `accounts.name_changed`         | Normal      | valor oculto                                             |
+| `accounts.email_changed`        | Crítico     | troca o login; valor oculto                              |
+| `audit.exported`                | Importante  | `rows`, `period` e `filtered`; nunca o texto da busca    |
+| `imports.started`               | Normal      | `size`                                                   |
+| `imports.finished`              | Normal      | `files`, `conversations_new`, `messages_new`, `problems` |
+| `imports.failed`                | Importante  | falha; `code`                                            |
+
+Nome do arquivo nunca vai para a auditoria. As ações de IA entram com o passo delas.
 
 Métrica `owly.imports.duration` (segundos, atributo `outcome`: `done` ou `failed`) e rastro `import` por importação.
+
+## Tela de Atividade
+
+`/conta/atividade`: lista paginada (25 por página) da empresa de quem está logado, mais recente primeiro. Filtros por período (contado no fuso da empresa), quem, ação, recurso, resultado e criticidade, todos juntos e feitos no banco; a busca procura no nome, no texto da ação, no `#id` do registro, no IP e no request id. Cada linha abre um painel com tudo o que foi guardado. `?resource=user&resource_id=3` mostra só a atividade de um registro: é o link que as telas de cada recurso vão usar. "Exportar planilha" baixa um CSV com tudo o que os filtros acham e grava `audit.exported`.
