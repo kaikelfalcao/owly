@@ -9,6 +9,7 @@ export type User = {
 export type Organization = {
     id: number;
     name: string;
+    timezone: string;
 };
 
 export type Auth = {

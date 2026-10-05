@@ -1,5 +1,7 @@
 <?php
 
+use App\Domains\Conversations\Http\ConversationController;
+use App\Domains\Imports\Http\ImportController;
 use App\Platform\Http\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -8,6 +10,12 @@ Route::redirect('/', '/dashboard')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+
+    Route::get('conversas', [ConversationController::class, 'index'])->name('conversations.index');
+    Route::get('conversas/{conversation}', [ConversationController::class, 'show'])->whereNumber('conversation')->name('conversations.show');
+
+    Route::get('importar', [ImportController::class, 'index'])->name('imports.index');
+    Route::post('importar', [ImportController::class, 'store'])->middleware('throttle:10,1')->name('imports.store');
 
     Route::post('notificacoes/lidas', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::get('notificacoes/{id}', [NotificationController::class, 'open'])->name('notifications.open');

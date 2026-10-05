@@ -17,7 +17,8 @@
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
         "open-telemetry/exporter-otlp": "^1.4",
-        "open-telemetry/sdk": "^1.15"
+        "open-telemetry/sdk": "^1.15",
+        "openspout/openspout": "^5.3"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",

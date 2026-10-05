@@ -12,4 +12,14 @@ return [
         'environment' => env('APP_ENV', 'production'),
     ],
 
+    /*
+    | Importação de conversas (docs/escopo.md, passo 4).
+    */
+    'imports' => [
+        'format' => env('OWLY_IMPORT_FORMAT', 'whatsapp_xlsx_zip'),
+        // O servidor também precisa aceitar arquivos deste tamanho
+        // (upload_max_filesize e post_max_size do PHP).
+        'max_kb' => (int) env('OWLY_IMPORT_MAX_KB', 51200),
+    ],
+
 ];

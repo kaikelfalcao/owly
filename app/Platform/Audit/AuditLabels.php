@@ -20,6 +20,9 @@ class AuditLabels
         'auth.recovery_codes_generated' => 'Gerou novos códigos de recuperação',
         'accounts.owner_created' => 'Conta criada',
         'accounts.email_changed' => 'Trocou o e-mail de entrada',
+        'imports.started' => 'Subiu um zip de conversas',
+        'imports.finished' => 'Importação de conversas concluída',
+        'imports.failed' => 'Importação de conversas não deu certo',
     ];
 
     /** Ações que merecem atenção na lista. */
@@ -27,6 +30,7 @@ class AuditLabels
         'auth.failed',
         'auth.two_factor_failed',
         'auth.two_factor_disabled',
+        'imports.failed',
     ];
 
     public static function for(string $action): string
