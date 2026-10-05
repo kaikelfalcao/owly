@@ -4,6 +4,7 @@ use App\Domains\Ai\Http\AiConnectionController;
 use App\Domains\Ai\Http\AiQuestionController;
 use App\Domains\Conversations\Http\ConversationController;
 use App\Domains\Imports\Http\ImportController;
+use App\Domains\Insights\Http\DashboardController;
 use App\Platform\Http\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -11,7 +12,8 @@ use Illuminate\Support\Facades\Route;
 Route::redirect('/', '/dashboard')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('dashboard/{insight}', [DashboardController::class, 'show'])->where('insight', '[a-z-]+')->name('insights.show');
 
     Route::get('conversas', [ConversationController::class, 'index'])->name('conversations.index');
     Route::get('conversas/{conversation}', [ConversationController::class, 'show'])->whereNumber('conversation')->name('conversations.show');

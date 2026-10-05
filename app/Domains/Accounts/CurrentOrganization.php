@@ -2,6 +2,7 @@
 
 namespace App\Domains\Accounts;
 
+use App\Domains\Accounts\Data\WorkingCalendar;
 use App\Domains\Accounts\Models\Organization;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Factory as Auth;
@@ -18,6 +19,20 @@ class CurrentOrganization
     public function id(): int
     {
         return $this->get()->id;
+    }
+
+    public function calendar(): WorkingCalendar
+    {
+        $organization = $this->get();
+
+        return new WorkingCalendar(
+            organizationId: $organization->id,
+            timezone: $organization->timezone,
+            hours: $organization->hours(),
+            holidays: array_column($organization->holidays ?? [], 'date'),
+            nationalHolidays: $organization->national_holidays ?? true,
+            configured: $organization->business_hours !== null,
+        );
     }
 
     public function get(): Organization

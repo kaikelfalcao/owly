@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Accounts\Http\BusinessHoursController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use App\Platform\Http\ActivityController;
@@ -21,6 +22,9 @@ Route::middleware(['auth'])->prefix('conta')->group(function () {
     Route::put('senha', [SecurityController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('user-password.update');
+
+    Route::get('horario', [BusinessHoursController::class, 'edit'])->name('business-hours.edit');
+    Route::put('horario', [BusinessHoursController::class, 'update'])->name('business-hours.update');
 
     Route::inertia('aparencia', 'settings/appearance')->name('appearance.edit');
 
