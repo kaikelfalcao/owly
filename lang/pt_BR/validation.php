@@ -1,0 +1,56 @@
+<?php
+
+// Mensagens de validação em pt-BR (regras usadas pela Owly e pelo login).
+return [
+    'accepted' => 'O campo :attribute precisa ser aceito.',
+    'array' => 'O campo :attribute precisa ser uma lista.',
+    'boolean' => 'O campo :attribute precisa ser verdadeiro ou falso.',
+    'confirmed' => 'A confirmação de :attribute não confere.',
+    'current_password' => 'A senha está incorreta.',
+    'date' => 'O campo :attribute não é uma data válida.',
+    'date_format' => 'O campo :attribute precisa estar no formato :format.',
+    'email' => 'O campo :attribute precisa ser um e-mail válido.',
+    'exists' => 'O valor de :attribute não existe.',
+    'file' => 'O campo :attribute precisa ser um arquivo.',
+    'in' => 'O valor de :attribute é inválido.',
+    'integer' => 'O campo :attribute precisa ser um número inteiro.',
+    'lowercase' => 'O campo :attribute precisa estar em minúsculas.',
+    'max' => [
+        'array' => 'O campo :attribute pode ter no máximo :max itens.',
+        'file' => 'O arquivo :attribute pode ter no máximo :max KB.',
+        'numeric' => 'O campo :attribute pode ser no máximo :max.',
+        'string' => 'O campo :attribute pode ter no máximo :max caracteres.',
+    ],
+    'mimes' => 'O arquivo :attribute precisa ser do tipo: :values.',
+    'min' => [
+        'array' => 'O campo :attribute precisa ter pelo menos :min itens.',
+        'file' => 'O arquivo :attribute precisa ter pelo menos :min KB.',
+        'numeric' => 'O campo :attribute precisa ser pelo menos :min.',
+        'string' => 'O campo :attribute precisa ter pelo menos :min caracteres.',
+    ],
+    'numeric' => 'O campo :attribute precisa ser um número.',
+    'password' => [
+        'letters' => 'A :attribute precisa ter pelo menos uma letra.',
+        'mixed' => 'A :attribute precisa ter letras maiúsculas e minúsculas.',
+        'numbers' => 'A :attribute precisa ter pelo menos um número.',
+        'symbols' => 'A :attribute precisa ter pelo menos um símbolo.',
+        'uncompromised' => 'Esta :attribute apareceu em um vazamento de dados. Escolha outra.',
+    ],
+    'required' => 'O campo :attribute é obrigatório.',
+    'string' => 'O campo :attribute precisa ser um texto.',
+    'unique' => 'Este :attribute já está em uso.',
+    'uploaded' => 'Não foi possível enviar :attribute.',
+    'url' => 'O campo :attribute precisa ser um endereço válido.',
+
+    'attributes' => [
+        'name' => 'nome',
+        'email' => 'e-mail',
+        'password' => 'senha',
+        'current_password' => 'senha atual',
+        'file' => 'arquivo',
+        'from' => 'data inicial',
+        'to' => 'data final',
+        'code' => 'código',
+        'recovery_code' => 'código de recuperação',
+    ],
+];

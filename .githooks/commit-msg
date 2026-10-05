@@ -1,0 +1,3 @@
+#!/bin/sh
+# Padrão de commit do Owly (Conventional Commits). Ver .claude/rules/commits.md.
+exec php scripts/ci-guard.php commit-msg "$1"

@@ -1,0 +1,6 @@
+#!/bin/sh
+# Nada sobe sem o `composer ci:check` verde no código do último commit.
+php scripts/ci-guard.php check-push || {
+    echo "Rode: composer ci:check" >&2
+    exit 1
+}
