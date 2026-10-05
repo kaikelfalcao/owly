@@ -32,4 +32,6 @@ Sem `OTEL_EXPORTER_OTLP_ENDPOINT` a telemetria fica desligada e nada sai da apli
 
 ## Já auditado
 
-`auth.login`, `auth.logout`, `auth.failed` (com `known_user`, nunca o e-mail digitado), `auth.password_reset`, `auth.password_changed`, `auth.two_factor_enabled`, `auth.two_factor_disabled`, `auth.two_factor_failed`, `auth.recovery_codes_generated`. As ações de importação e IA entram com os passos delas.
+`auth.login`, `auth.logout`, `auth.failed` (com `known_user`, nunca o e-mail digitado), `auth.password_reset`, `auth.password_changed`, `auth.two_factor_enabled`, `auth.two_factor_disabled`, `auth.two_factor_failed`, `auth.recovery_codes_generated`, `imports.started` (com `size`), `imports.finished` (com `files`, `conversations_new`, `messages_new`, `problems`) e `imports.failed` (com `code`). Nome do arquivo nunca vai para a auditoria. As ações de IA entram com o passo delas.
+
+Métrica `owly.imports.duration` (segundos, atributo `outcome`: `done` ou `failed`) e rastro `import` por importação.

@@ -1,6 +1,8 @@
 <?php
 
 use App\Domains\Accounts\AccountsServiceProvider;
+use App\Domains\Conversations\ConversationsServiceProvider;
+use App\Domains\Imports\ImportsServiceProvider;
 use App\Platform\PlatformServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\FortifyServiceProvider;
@@ -12,4 +14,6 @@ return [
     // auditoria do login ser gravada.
     AccountsServiceProvider::class,
     PlatformServiceProvider::class,
+    ConversationsServiceProvider::class,
+    ImportsServiceProvider::class,
 ];

@@ -41,7 +41,7 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user()?->only(['id', 'name', 'email', 'email_verified_at']),
-                'organization' => $request->user()?->organization?->only(['id', 'name']),
+                'organization' => $request->user()?->organization?->only(['id', 'name', 'timezone']),
             ],
             'notifications' => fn () => $request->user()
                 ? app(NotificationFeed::class)->for($request->user())

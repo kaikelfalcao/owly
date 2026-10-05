@@ -16,6 +16,8 @@ Monólito Laravel com domínios separados. O objetivo é não repetir o que acon
 As pastas nascem quando o primeiro código do domínio entra. Já existem:
 
 - `app/Platform`: telemetria, logs, auditoria (`docs/observabilidade.md`) e notificações do sino (`Notice`).
+- `app/Domains/Conversations`: clientes, vendedoras, conversas e mensagens. Quem grava usa o contrato `ConversationStore`, que recebe `IncomingConversation` sem saber de onde veio e ignora mensagem que já existe (`external_id` por conversa). As telas leem por `ConversationQueries`.
+- `app/Domains/Imports`: a tabela `imports`, o serviço `StartImport` (guarda o zip, recusa arquivo repetido e manda para a fila), o job `ProcessImport` (lê pelo `Importer`, grava pelo `ConversationStore`, apaga o zip, audita e avisa no sino) e a regra `DateGaps`. O formato ligado vem de `owly.imports.format`.
 - `app/Domains/Accounts`: a empresa (`Organization`), o comando `owly:owner` e `CurrentOrganization`, que os outros domínios usam para saber de qual empresa é a requisição. O `User` continua em `app/Models`, onde o Laravel e o Fortify esperam.
 
 ## Regras de fronteira
@@ -23,7 +25,7 @@ As pastas nascem quando o primeiro código do domínio entra. Já existem:
 1. Um domínio só lê e grava as próprias tabelas e models.
 2. Para usar outro domínio: o contrato público dele (`app/Domains/<Nome>/Contracts`) ou um evento que ele publica (`Events`). Nada de importar model alheio.
 3. A direção é sempre esta: Importação grava em Conversas pelo contrato; Leitura lê Conversas pelo contrato; IA é chamada por quem precisa, pelo contrato.
-4. Um teste de arquitetura vai garantir essas regras assim que existirem dois domínios.
+4. `tests/Unit/ArchitectureTest.php` garante isso: de outro domínio, só `Contracts`, `Data`, `Events` e o `CurrentOrganization` de Conta.
 
 ## Provedores como adaptadores
 

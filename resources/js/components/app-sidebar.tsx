@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, MessagesSquare, Upload } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import {
@@ -11,6 +11,8 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as conversations } from '@/routes/conversations';
+import { index as imports } from '@/routes/imports';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -18,6 +20,16 @@ const mainNavItems: NavItem[] = [
         title: 'Painel',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Conversas',
+        href: conversations(),
+        icon: MessagesSquare,
+    },
+    {
+        title: 'Importar',
+        href: imports(),
+        icon: Upload,
     },
 ];
 
