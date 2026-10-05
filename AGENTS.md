@@ -9,6 +9,7 @@ A Owly lê as conversas de venda pelo WhatsApp e mostra ao dono da empresa onde 
 - Escopo da primeira entrega e o que fica de fora: `docs/escopo.md`
 - Arquitetura (domínios, adaptadores, empresa): `docs/arquitetura.md`
 - Identidade visual: `docs/design.md`
+- IA (provedores, máscara de dados, custo): `docs/ia.md`
 - Observabilidade e auditoria: `docs/observabilidade.md`
 - Palavras da tela e do código: `docs/glossario.md`
 

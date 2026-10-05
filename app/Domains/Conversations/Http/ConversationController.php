@@ -3,6 +3,7 @@
 namespace App\Domains\Conversations\Http;
 
 use App\Domains\Accounts\CurrentOrganization;
+use App\Domains\Conversations\Contracts\ConversationPanels;
 use App\Domains\Conversations\Services\ConversationQueries;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -26,8 +27,14 @@ class ConversationController extends Controller
         ]);
     }
 
-    public function show(int $conversation): Response
+    public function show(int $conversation, ConversationPanels $panels): Response
     {
-        return Inertia::render('conversations/show', $this->queries->show($this->organization->id(), $conversation));
+        $organizationId = $this->organization->id();
+        $page = $this->queries->show($organizationId, $conversation);
+
+        return Inertia::render('conversations/show', [
+            ...$page,
+            'panels' => $panels->for($organizationId, $conversation),
+        ]);
     }
 }

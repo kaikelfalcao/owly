@@ -23,6 +23,10 @@ class AuditLabels
         'imports.started' => 'Subiu um zip de conversas',
         'imports.finished' => 'Importação de conversas concluída',
         'imports.failed' => 'Importação de conversas não deu certo',
+        'ai.connection_created' => 'Conectou uma IA',
+        'ai.connection_default' => 'Trocou a IA padrão',
+        'ai.connection_removed' => 'Removeu uma conexão de IA',
+        'ai.question_asked' => 'Perguntou à IA sobre uma conversa',
     ];
 
     /** Ações que merecem atenção na lista. */

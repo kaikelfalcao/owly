@@ -6,10 +6,14 @@ import {
     Mic,
     PhoneMissed,
     Reply,
+    Sparkles,
     Trash2,
     Video,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useState } from 'react';
+import AskAi from '@/components/ask-ai';
+import type { AiPanelProps, FocusedMessage } from '@/components/ask-ai';
 import { date, dateTime, dayKey, dayLabel, monthLabel, time } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import { index, show } from '@/routes/conversations';
@@ -39,70 +43,102 @@ type Props = {
         sellers: { name: string; messages: number }[];
     };
     messages: Message[];
+    panels: { ai?: AiPanelProps };
 };
 
 /** Uma conversa: a ficha do cliente e todas as mensagens, dia a dia. */
-export default function ConversationShow({ conversation, messages }: Props) {
+export default function ConversationShow({
+    conversation,
+    messages,
+    panels,
+}: Props) {
     const timeZone = usePage().props.auth.organization?.timezone;
     const groups = groupByDay(messages, timeZone);
+    const [focused, setFocused] = useState<FocusedMessage>(null);
+    const ai = panels.ai;
+    const askAbout = ai?.connection
+        ? (message: Message) =>
+              setFocused({
+                  id: message.id,
+                  label: `${time(message.sentAt, timeZone)} · ${message.body ?? message.mediaName ?? 'arquivo'}`,
+              })
+        : undefined;
 
     return (
         <>
             <Head title={conversation.contact} />
             <div className="mx-auto grid w-full max-w-6xl gap-6 p-4 md:p-6 lg:grid-cols-[18rem_1fr]">
-                <aside className="flex h-fit flex-col gap-4 rounded-2xl border p-4 lg:sticky lg:top-4">
-                    <div>
-                        <h1 className="text-lg font-semibold break-words">
-                            {conversation.contact}
-                        </h1>
-                        {conversation.phone &&
-                            conversation.phone !== conversation.contact && (
-                                <p className="font-mono text-sm text-muted-foreground">
-                                    {conversation.phone}
-                                </p>
-                            )}
-                    </div>
-                    <dl className="grid grid-cols-2 gap-3 text-sm">
-                        <Fact label="Mensagens">
-                            {conversation.messagesCount.toLocaleString('pt-BR')}
-                        </Fact>
-                        <Fact label="Do cliente">
-                            {conversation.fromContact.toLocaleString('pt-BR')}
-                        </Fact>
-                        {conversation.firstMessageAt && (
-                            <Fact label="Primeira">
-                                {date(conversation.firstMessageAt, timeZone)}
-                            </Fact>
-                        )}
-                        {conversation.lastMessageAt && (
-                            <Fact label="Última">
-                                {date(conversation.lastMessageAt, timeZone)}
-                            </Fact>
-                        )}
-                    </dl>
-                    {conversation.sellers.length > 0 && (
-                        <div className="text-sm">
-                            <p className="mb-1 text-xs text-muted-foreground">
-                                Quem atendeu
-                            </p>
-                            <ul className="flex flex-col gap-1">
-                                {conversation.sellers.map((seller) => (
-                                    <li
-                                        key={seller.name}
-                                        className="flex justify-between gap-2"
-                                    >
-                                        <span className="truncate">
-                                            {seller.name}
-                                        </span>
-                                        <span className="font-mono text-muted-foreground tabular-nums">
-                                            {seller.messages}
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
+                <div className="flex h-fit flex-col gap-4 lg:sticky lg:top-4 lg:max-h-[calc(100svh-6rem)] lg:overflow-y-auto">
+                    <aside className="flex flex-col gap-4 rounded-2xl border p-4">
+                        <div>
+                            <h1 className="text-lg font-semibold break-words">
+                                {conversation.contact}
+                            </h1>
+                            {conversation.phone &&
+                                conversation.phone !== conversation.contact && (
+                                    <p className="font-mono text-sm text-muted-foreground">
+                                        {conversation.phone}
+                                    </p>
+                                )}
                         </div>
+                        <dl className="grid grid-cols-2 gap-3 text-sm">
+                            <Fact label="Mensagens">
+                                {conversation.messagesCount.toLocaleString(
+                                    'pt-BR',
+                                )}
+                            </Fact>
+                            <Fact label="Do cliente">
+                                {conversation.fromContact.toLocaleString(
+                                    'pt-BR',
+                                )}
+                            </Fact>
+                            {conversation.firstMessageAt && (
+                                <Fact label="Primeira">
+                                    {date(
+                                        conversation.firstMessageAt,
+                                        timeZone,
+                                    )}
+                                </Fact>
+                            )}
+                            {conversation.lastMessageAt && (
+                                <Fact label="Última">
+                                    {date(conversation.lastMessageAt, timeZone)}
+                                </Fact>
+                            )}
+                        </dl>
+                        {conversation.sellers.length > 0 && (
+                            <div className="text-sm">
+                                <p className="mb-1 text-xs text-muted-foreground">
+                                    Quem atendeu
+                                </p>
+                                <ul className="flex flex-col gap-1">
+                                    {conversation.sellers.map((seller) => (
+                                        <li
+                                            key={seller.name}
+                                            className="flex justify-between gap-2"
+                                        >
+                                            <span className="truncate">
+                                                {seller.name}
+                                            </span>
+                                            <span className="font-mono text-muted-foreground tabular-nums">
+                                                {seller.messages}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </aside>
+                    {ai && (
+                        <AskAi
+                            conversationId={conversation.id}
+                            contactName={conversation.contact}
+                            panel={ai}
+                            focused={focused}
+                            onClearFocus={() => setFocused(null)}
+                        />
                     )}
-                </aside>
+                </div>
 
                 <section className="flex min-w-0 flex-col gap-2">
                     {groups.map((group) => (
@@ -120,6 +156,7 @@ export default function ConversationShow({ conversation, messages }: Props) {
                                     key={message.id}
                                     message={message}
                                     timeZone={timeZone}
+                                    onAsk={askAbout}
                                 />
                             ))}
                         </div>
@@ -142,9 +179,11 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 function Bubble({
     message,
     timeZone,
+    onAsk,
 }: {
     message: Message;
     timeZone?: string;
+    onAsk?: (message: Message) => void;
 }) {
     const at = time(message.sentAt, timeZone);
 
@@ -174,7 +213,7 @@ function Bubble({
         <div className={cn('flex', out ? 'justify-end' : 'justify-start')}>
             <div
                 className={cn(
-                    'max-w-[85%] rounded-2xl px-3 py-2 text-sm sm:max-w-[70%]',
+                    'group max-w-[85%] rounded-2xl px-3 py-2 text-sm sm:max-w-[70%]',
                     out
                         ? 'rounded-br-sm bg-primary/10'
                         : 'rounded-bl-sm border bg-card',
@@ -207,12 +246,25 @@ function Bubble({
                         {message.body}
                     </p>
                 )}
-                <p
-                    className="mt-0.5 text-right font-mono text-[11px] text-muted-foreground"
-                    title={dateTime(message.sentAt, timeZone)}
-                >
-                    {at}
-                </p>
+                <div className="mt-0.5 flex items-center justify-end gap-2">
+                    {onAsk && (
+                        <button
+                            type="button"
+                            onClick={() => onAsk(message)}
+                            className="text-muted-foreground opacity-50 transition-opacity group-hover:opacity-100 hover:text-primary focus-visible:opacity-100 sm:opacity-0"
+                            aria-label="Perguntar à IA sobre esta mensagem"
+                            title="Perguntar à IA sobre esta mensagem"
+                        >
+                            <Sparkles className="size-3.5" />
+                        </button>
+                    )}
+                    <span
+                        className="font-mono text-[11px] text-muted-foreground"
+                        title={dateTime(message.sentAt, timeZone)}
+                    >
+                        {at}
+                    </span>
+                </div>
             </div>
         </div>
     );

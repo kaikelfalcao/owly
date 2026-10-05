@@ -32,6 +32,6 @@ Sem `OTEL_EXPORTER_OTLP_ENDPOINT` a telemetria fica desligada e nada sai da apli
 
 ## Já auditado
 
-`auth.login`, `auth.logout`, `auth.failed` (com `known_user`, nunca o e-mail digitado), `auth.password_reset`, `auth.password_changed`, `auth.two_factor_enabled`, `auth.two_factor_disabled`, `auth.two_factor_failed`, `auth.recovery_codes_generated`, `imports.started` (com `size`), `imports.finished` (com `files`, `conversations_new`, `messages_new`, `problems`) e `imports.failed` (com `code`). Nome do arquivo nunca vai para a auditoria. As ações de IA entram com o passo delas.
+`auth.login`, `auth.logout`, `auth.failed` (com `known_user`, nunca o e-mail digitado), `auth.password_reset`, `auth.password_changed`, `auth.two_factor_enabled`, `auth.two_factor_disabled`, `auth.two_factor_failed`, `auth.recovery_codes_generated`, `imports.started` (com `size`), `imports.finished` (com `files`, `conversations_new`, `messages_new`, `problems`) e `imports.failed` (com `code`). Nome do arquivo nunca vai para a auditoria. `ai.connection_created`, `ai.connection_default` e `ai.connection_removed` (com `provider`) e `ai.question_asked` (com `provider`, `ok`, `input_tokens`, `output_tokens`; nunca o texto).
 
-Métrica `owly.imports.duration` (segundos, atributo `outcome`: `done` ou `failed`) e rastro `import` por importação.
+Métrica `owly.imports.duration` (segundos, atributo `outcome`: `done` ou `failed`) e rastro `import` por importação. Cada pergunta à IA vira o rastro `ai.generate` (provedor e tokens) e entra na métrica `owly.ai.duration` (atributos `provider` e `outcome`).
