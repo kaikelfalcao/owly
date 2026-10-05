@@ -1,0 +1,18 @@
+# Ferramentas de desenvolvimento. A aplicação roda com `composer dev`.
+#
+# otel-lgtm junta Grafana, Loki, Tempo e Prometheus num contêiner só.
+# Com ele de pé, coloque no .env:
+#   OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+# e abra o Grafana em http://localhost:3000 (admin / admin).
+services:
+    otel:
+        image: grafana/otel-lgtm:latest
+        ports:
+            - '3000:3000' # Grafana
+            - '4317:4317' # OTLP gRPC
+            - '4318:4318' # OTLP HTTP
+        volumes:
+            - otel-data:/data
+
+volumes:
+    otel-data:

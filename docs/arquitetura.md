@@ -13,7 +13,7 @@ Monólito Laravel com domínios separados. O objetivo é não repetir o que acon
 | IA         | `app/Domains/Ai`            | conexões com provedores, pedidos à IA, máscara de dados, custo   | regras de negócio  |
 | Plataforma | `app/Platform`              | logs, rastros, métricas, auditoria, notificações                 | regras de negócio  |
 
-As pastas nascem quando o primeiro código do domínio entra; este commit só traz a base.
+As pastas nascem quando o primeiro código do domínio entra. `app/Platform` já existe: telemetria, logs e auditoria (`docs/observabilidade.md`).
 
 ## Regras de fronteira
 
