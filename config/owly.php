@@ -22,4 +22,12 @@ return [
         'max_kb' => (int) env('OWLY_IMPORT_MAX_KB', 51200),
     ],
 
+    /*
+    | IA (docs/ia.md). O endereço do Gemini só muda para um proxy da empresa
+    | ou um servidor falso em dev.
+    */
+    'ai' => [
+        'gemini_url' => env('OWLY_GEMINI_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+    ],
+
 ];

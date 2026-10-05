@@ -1,6 +1,7 @@
 <?php
 
 use App\Domains\Accounts\AccountsServiceProvider;
+use App\Domains\Ai\AiServiceProvider;
 use App\Domains\Conversations\ConversationsServiceProvider;
 use App\Domains\Imports\ImportsServiceProvider;
 use App\Platform\PlatformServiceProvider;
@@ -16,4 +17,5 @@ return [
     PlatformServiceProvider::class,
     ConversationsServiceProvider::class,
     ImportsServiceProvider::class,
+    AiServiceProvider::class,
 ];

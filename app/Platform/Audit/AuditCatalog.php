@@ -32,6 +32,10 @@ class AuditCatalog
         'imports.started' => ['Subiu um zip de conversas', Severity::Normal],
         'imports.finished' => ['Importação de conversas concluída', Severity::Normal],
         'imports.failed' => ['Importação de conversas não deu certo', Severity::Important, Outcome::Failure],
+        'ai.connection_created' => ['Conectou uma IA', Severity::Important],
+        'ai.connection_default' => ['Trocou a IA padrão', Severity::Normal],
+        'ai.connection_removed' => ['Removeu uma conexão de IA', Severity::Important],
+        'ai.question_asked' => ['Perguntou à IA sobre uma conversa', Severity::Normal],
     ];
 
     /**
@@ -44,6 +48,8 @@ class AuditCatalog
         'user' => [User::class, 'Dono'],
         // Pelo nome, sem importar o model: a Plataforma não depende de domínio.
         'import' => ['App\\Domains\\Imports\\Models\\Import', 'Importação'],
+        'ai_connection' => ['App\\Domains\\Ai\\Models\\AiConnection', 'Conexão de IA'],
+        'ai_question' => ['App\\Domains\\Ai\\Models\\AiQuestion', 'Pergunta à IA'],
     ];
 
     /** Nomes dos campos que aparecem em "Alterações". */
@@ -65,6 +71,10 @@ class AuditCatalog
         'messages_new' => 'Mensagens novas',
         'problems' => 'Planilhas que ficaram de fora',
         'code' => 'Motivo (código)',
+        'provider' => 'Provedor de IA',
+        'ok' => 'Respondeu',
+        'input_tokens' => 'Tokens enviados',
+        'output_tokens' => 'Tokens recebidos',
     ];
 
     public static function label(string $action): string

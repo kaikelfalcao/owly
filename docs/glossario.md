@@ -27,5 +27,9 @@ Uma palavra por conceito, igual na tela e no código. Conceito novo entra aqui a
 | Canal                      | `Channel`       | por onde a atividade chegou: navegador, comando ou tarefa da fila      |
 | Recurso                    | `subject`       | o registro sobre o qual a atividade foi feita (o login, a importação…) |
 | Minha conta                | `/conta`        | perfil, segurança, aparência e atividade do dono                       |
+| Pergunta à IA              | `AiQuestion`    | pergunta do dono sobre uma conversa ou uma mensagem, com a resposta    |
+| Padrão                     | `is_default`    | a conexão de IA que responde às perguntas                              |
+| Modelo                     | `model`         | a versão da IA do provedor (ex.: Gemini 2.5 Flash)                     |
+| Máscara                    | `Redactor`      | troca nome, telefone e documentos por marcadores antes de ir para a IA |
 | Conexão de IA              | `AiConnection`  | a chave de um provedor de IA ligada à empresa                          |
 | Provedor                   | `Provider`      | quem fornece a IA (Gemini primeiro)                                    |
