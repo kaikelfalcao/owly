@@ -1,5 +1,5 @@
 import { Head, usePage } from '@inertiajs/react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import OwlyMascot from '@/components/owly-mascot';
 import { dashboard } from '@/routes';
 
 export default function Dashboard() {
@@ -11,7 +11,7 @@ export default function Dashboard() {
             <Head title="Painel" />
             <div className="flex flex-1 items-center justify-center p-6">
                 <div className="flex max-w-md flex-col items-center gap-4 text-center">
-                    <AppLogoIcon className="size-20" />
+                    <OwlyMascot className="h-40 w-auto" />
                     <h1 className="text-2xl font-semibold">Olá, {firstName}</h1>
                     <p className="text-balance text-muted-foreground">
                         A Owly está pronta. Assim que a importação do zip das

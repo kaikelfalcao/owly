@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { Clock, MessageCircleWarning, Sparkles } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import AppLogoIcon from '@/components/app-logo-icon';
+import OwlyMascot from '@/components/owly-mascot';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
 
@@ -21,7 +21,7 @@ const POINTS = [
 ];
 
 /**
- * Entrar: formulário à esquerda e, em telas largas, o painel violeta com a
+ * Entrar: formulário à esquerda e, em telas largas, o painel lilás com a
  * coruja e o que a Owly faz.
  */
 export default function AuthSplitLayout({
@@ -52,19 +52,17 @@ export default function AuthSplitLayout({
                     </div>
                 </div>
             </div>
-            <div className="relative hidden overflow-hidden bg-primary p-10 text-primary-foreground lg:flex lg:flex-col lg:justify-between">
-                <div className="absolute -top-24 -right-24 size-96 rounded-full bg-white/10" />
-                <div className="absolute -bottom-32 -left-16 size-80 rounded-full bg-white/5" />
+            <div className="relative hidden overflow-hidden bg-primary/10 p-10 lg:flex lg:flex-col lg:justify-between dark:bg-primary/15">
+                <div className="absolute -top-24 -right-24 size-96 rounded-full bg-primary/10" />
+                <div className="absolute -bottom-32 -left-16 size-80 rounded-full bg-primary/5" />
                 <p className="relative max-w-sm text-3xl leading-tight font-semibold">
                     Veja onde a venda escapou nas conversas do WhatsApp.
                 </p>
-                <div className="relative mx-auto rounded-full bg-white/90 p-10 shadow-2xl">
-                    <AppLogoIcon className="size-44" />
-                </div>
+                <OwlyMascot className="relative mx-auto h-72 w-auto drop-shadow-xl" />
                 <ul className="relative flex flex-col gap-3 text-sm">
                     {POINTS.map(({ icon: Icon, text }) => (
                         <li key={text} className="flex items-center gap-3">
-                            <span className="flex size-8 items-center justify-center rounded-full bg-white/15">
+                            <span className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
                                 <Icon className="size-4" />
                             </span>
                             {text}

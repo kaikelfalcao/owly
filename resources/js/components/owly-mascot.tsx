@@ -1,18 +1,17 @@
 import type { ImgHTMLAttributes } from 'react';
 
-/**
- * Ícone da Owly: a cabeça da coruja. A ilustração é da marca (PNG em
- * public/images); não troque por SVG desenhado à mão.
- */
-export default function AppLogoIcon({
+/** A coruja inteira, para a tela de entrar e as telas vazias. */
+export default function OwlyMascot({
     alt = '',
+    className,
     ...props
 }: ImgHTMLAttributes<HTMLImageElement>) {
     return (
         <img
-            src="/images/owly-icone.png"
+            src="/images/owly-coruja.png"
             alt={alt}
             draggable={false}
+            className={className}
             {...props}
         />
     );
