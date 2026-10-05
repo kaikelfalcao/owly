@@ -28,20 +28,51 @@ export function ago(iso: string | null): string {
     return '';
 }
 
-/** "05/10/2026 14:32", no fuso pedido ou, sem ele, no de quem está vendo. */
+/**
+ * Datas sempre no fuso da empresa (o horário comercial é o dela), não no do
+ * navegador de quem está vendo.
+ */
+const format = (
+    iso: string,
+    timeZone: string | undefined,
+    options: Intl.DateTimeFormatOptions,
+) => new Date(iso).toLocaleString('pt-BR', { timeZone, ...options });
+
+/** "05/10/2026 14:32" */
 export function dateTime(iso: string, timeZone?: string): string {
-    return new Date(iso).toLocaleString('pt-BR', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-        timeZone,
+    return format(iso, timeZone, { dateStyle: 'short', timeStyle: 'short' });
+}
+
+/** "05/10/2026" */
+export function date(iso: string, timeZone?: string): string {
+    return format(iso, timeZone, { dateStyle: 'short' });
+}
+
+/** "14:32" */
+export function time(iso: string, timeZone?: string): string {
+    return format(iso, timeZone, { hour: '2-digit', minute: '2-digit' });
+}
+
+/** "segunda-feira, 5 de outubro" */
+export function dayLabel(iso: string, timeZone?: string): string {
+    return format(iso, timeZone, {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
     });
 }
 
-/** "5 de outubro de 2026, 14:32:07", com segundos, para investigar. */
+/** "outubro de 2026" */
+export function monthLabel(iso: string, timeZone?: string): string {
+    return format(iso, timeZone, { month: 'long', year: 'numeric' });
+}
+
+/** Chave para agrupar por dia no fuso dado: "2026-10-05". */
+export function dayKey(iso: string, timeZone?: string): string {
+    return new Date(iso).toLocaleDateString('en-CA', { timeZone });
+}
+
+/** "5 de outubro de 2026 às 14:32:07", com segundos, para investigar. */
 export function fullDateTime(iso: string, timeZone?: string): string {
-    return new Date(iso).toLocaleString('pt-BR', {
-        dateStyle: 'long',
-        timeStyle: 'medium',
-        timeZone,
-    });
+    return format(iso, timeZone, { dateStyle: 'long', timeStyle: 'medium' });
 }

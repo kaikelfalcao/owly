@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Platform\Audit\Audit;
 use App\Platform\Audit\AuditEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Context;
 use InvalidArgumentException;
 use Laravel\Fortify\Events\TwoFactorAuthenticationDisabled;
 use LogicException;
@@ -70,6 +71,16 @@ class AuditTest extends TestCase
         $this->assertSame('console', $entry->channel);
         $this->assertNull($entry->ip);
         $this->assertNull($entry->user_agent);
+    }
+
+    public function test_actions_in_a_queue_job_are_marked_as_such(): void
+    {
+        Context::add('job', 'ProcessImport');
+
+        $entry = app(Audit::class)->record('test.created');
+
+        $this->assertSame('queue', $entry->channel);
+        $this->assertNull($entry->ip);
     }
 
     public function test_changing_the_email_keeps_that_it_changed_but_not_the_value(): void

@@ -35,22 +35,27 @@ Sem `OTEL_EXPORTER_OTLP_ENDPOINT` a telemetria fica desligada e nada sai da apli
 
 ## Já auditado
 
-| Ação                            | Criticidade | Observação                                            |
-| ------------------------------- | ----------- | ----------------------------------------------------- |
-| `auth.login`, `auth.logout`     | Normal      | `remember` no login                                   |
-| `auth.failed`                   | Importante  | falha; `known_user`, nunca o e-mail digitado          |
-| `auth.two_factor_failed`        | Importante  | falha                                                 |
-| `auth.password_reset`           | Importante  |                                                       |
-| `auth.password_changed`         | Importante  |                                                       |
-| `auth.recovery_codes_generated` | Importante  |                                                       |
-| `auth.two_factor_enabled`       | Normal      |                                                       |
-| `auth.two_factor_disabled`      | Crítico     | a conta fica mais fácil de invadir                    |
-| `accounts.owner_created`        | Normal      | pelo comando `owly:owner`                             |
-| `accounts.name_changed`         | Normal      | valor oculto                                          |
-| `accounts.email_changed`        | Crítico     | troca o login; valor oculto                           |
-| `audit.exported`                | Importante  | `rows`, `period` e `filtered`; nunca o texto da busca |
+| Ação                            | Criticidade | Observação                                               |
+| ------------------------------- | ----------- | -------------------------------------------------------- |
+| `auth.login`, `auth.logout`     | Normal      | `remember` no login                                      |
+| `auth.failed`                   | Importante  | falha; `known_user`, nunca o e-mail digitado             |
+| `auth.two_factor_failed`        | Importante  | falha                                                    |
+| `auth.password_reset`           | Importante  |                                                          |
+| `auth.password_changed`         | Importante  |                                                          |
+| `auth.recovery_codes_generated` | Importante  |                                                          |
+| `auth.two_factor_enabled`       | Normal      |                                                          |
+| `auth.two_factor_disabled`      | Crítico     | a conta fica mais fácil de invadir                       |
+| `accounts.owner_created`        | Normal      | pelo comando `owly:owner`                                |
+| `accounts.name_changed`         | Normal      | valor oculto                                             |
+| `accounts.email_changed`        | Crítico     | troca o login; valor oculto                              |
+| `audit.exported`                | Importante  | `rows`, `period` e `filtered`; nunca o texto da busca    |
+| `imports.started`               | Normal      | `size`                                                   |
+| `imports.finished`              | Normal      | `files`, `conversations_new`, `messages_new`, `problems` |
+| `imports.failed`                | Importante  | falha; `code`                                            |
 
-As ações de importação e IA entram com os passos delas.
+Nome do arquivo nunca vai para a auditoria. As ações de IA entram com o passo delas.
+
+Métrica `owly.imports.duration` (segundos, atributo `outcome`: `done` ou `failed`) e rastro `import` por importação.
 
 ## Tela de Atividade
 

@@ -29,6 +29,9 @@ class AuditCatalog
         'accounts.name_changed' => ['Trocou o nome', Severity::Normal],
         'accounts.email_changed' => ['Trocou o e-mail de entrada', Severity::Critical],
         'audit.exported' => ['Exportou a atividade', Severity::Important],
+        'imports.started' => ['Subiu um zip de conversas', Severity::Normal],
+        'imports.finished' => ['Importação de conversas concluída', Severity::Normal],
+        'imports.failed' => ['Importação de conversas não deu certo', Severity::Important, Outcome::Failure],
     ];
 
     /**
@@ -39,6 +42,8 @@ class AuditCatalog
      */
     private const RESOURCES = [
         'user' => [User::class, 'Dono'],
+        // Pelo nome, sem importar o model: a Plataforma não depende de domínio.
+        'import' => ['App\\Domains\\Imports\\Models\\Import', 'Importação'],
     ];
 
     /** Nomes dos campos que aparecem em "Alterações". */
@@ -54,6 +59,12 @@ class AuditCatalog
         'rows' => 'Linhas exportadas',
         'period' => 'Período',
         'filtered' => 'Com filtros',
+        'size' => 'Tamanho do zip (bytes)',
+        'files' => 'Planilhas no zip',
+        'conversations_new' => 'Conversas novas',
+        'messages_new' => 'Mensagens novas',
+        'problems' => 'Planilhas que ficaram de fora',
+        'code' => 'Motivo (código)',
     ];
 
     public static function label(string $action): string
