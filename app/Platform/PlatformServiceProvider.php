@@ -3,12 +3,14 @@
 namespace App\Platform;
 
 use App\Platform\Audit\Listeners\RecordAuthActivity;
+use App\Platform\Console\ServeCommand;
 use App\Platform\Telemetry\Telemetry;
 use App\Platform\Telemetry\TelemetryFactory;
 use App\Platform\Telemetry\TraceQueries;
 use App\Platform\Telemetry\TraceQueueJobs;
 use Illuminate\Auth\Events\Authenticated;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Foundation\Console\ServeCommand as LaravelServeCommand;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Event;
@@ -26,6 +28,10 @@ class PlatformServiceProvider extends ServiceProvider
             $app['config']->get('owly.telemetry'),
         ));
         $this->app->singleton(TraceQueueJobs::class);
+
+        // O serve do Laravel vem de um provider carregado depois deste: trocar
+        // a instância na hora de criar vale mesmo assim.
+        $this->app->extend(LaravelServeCommand::class, fn ($command, $app) => $app->make(ServeCommand::class));
     }
 
     public function boot(): void
