@@ -2,9 +2,11 @@
 
 namespace App\Domains\Conversations;
 
+use App\Domains\Conversations\Contracts\ConversationFacts;
 use App\Domains\Conversations\Contracts\ConversationPanels;
 use App\Domains\Conversations\Contracts\ConversationStore;
 use App\Domains\Conversations\Contracts\ConversationTranscript;
+use App\Domains\Conversations\Services\EloquentConversationFacts;
 use App\Domains\Conversations\Services\EloquentConversationStore;
 use App\Domains\Conversations\Services\EloquentConversationTranscript;
 use App\Domains\Conversations\Services\PanelRegistry;
@@ -17,5 +19,6 @@ class ConversationsServiceProvider extends ServiceProvider
         $this->app->bind(ConversationStore::class, EloquentConversationStore::class);
         $this->app->bind(ConversationTranscript::class, EloquentConversationTranscript::class);
         $this->app->singleton(ConversationPanels::class, PanelRegistry::class);
+        $this->app->bind(ConversationFacts::class, EloquentConversationFacts::class);
     }
 }

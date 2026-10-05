@@ -76,3 +76,25 @@ export function dayKey(iso: string, timeZone?: string): string {
 export function fullDateTime(iso: string, timeZone?: string): string {
     return format(iso, timeZone, { dateStyle: 'long', timeStyle: 'medium' });
 }
+
+/** Segundos de expediente em texto curto: "45 s", "5 min", "1 h 20 min", "26 h". */
+export function duration(seconds: number | null | undefined): string {
+    if (seconds === null || seconds === undefined) {
+        return '—';
+    }
+
+    if (seconds < 60) {
+        return `${Math.round(seconds)} s`;
+    }
+
+    const minutes = Math.round(seconds / 60);
+
+    if (minutes < 60) {
+        return `${minutes} min`;
+    }
+
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+
+    return hours >= 10 || rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+}

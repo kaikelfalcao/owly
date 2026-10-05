@@ -7,6 +7,7 @@ import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
 import { index as activity } from '@/routes/activity';
 import { edit as editAppearance } from '@/routes/appearance';
+import { edit as editHours } from '@/routes/business-hours';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
 import type { NavItem } from '@/types';
@@ -20,6 +21,11 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Segurança',
         href: editSecurity(),
+        icon: null,
+    },
+    {
+        title: 'Horário',
+        href: editHours(),
         icon: null,
     },
     {
@@ -45,7 +51,7 @@ export default function SettingsLayout({
         <div className="px-4 py-6">
             <Heading
                 title="Minha conta"
-                description="Seus dados de entrada, segurança e o que aconteceu na conta"
+                description="Seus dados de entrada, o horário da empresa e o que aconteceu na conta"
             />
 
             <div className="flex flex-col lg:flex-row lg:space-x-12">

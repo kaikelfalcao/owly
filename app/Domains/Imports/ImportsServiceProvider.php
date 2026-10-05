@@ -4,6 +4,8 @@ namespace App\Domains\Imports;
 
 use App\Domains\Imports\Adapters\WhatsAppXlsxZip\WhatsAppXlsxZip;
 use App\Domains\Imports\Contracts\Importer;
+use App\Domains\Imports\Contracts\ImportHealth;
+use App\Domains\Imports\Services\LatestImportHealth;
 use Illuminate\Support\ServiceProvider;
 
 class ImportsServiceProvider extends ServiceProvider
@@ -21,5 +23,7 @@ class ImportsServiceProvider extends ServiceProvider
         $this->app->bind(Importer::class, fn ($app) => $app->make(
             self::FORMATS[$app['config']->get('owly.imports.format')] ?? WhatsAppXlsxZip::class,
         ));
+
+        $this->app->bind(ImportHealth::class, LatestImportHealth::class);
     }
 }

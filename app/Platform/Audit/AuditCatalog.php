@@ -28,6 +28,7 @@ class AuditCatalog
         'accounts.owner_created' => ['Conta criada', Severity::Normal],
         'accounts.name_changed' => ['Trocou o nome', Severity::Normal],
         'accounts.email_changed' => ['Trocou o e-mail de entrada', Severity::Critical],
+        'accounts.business_hours_changed' => ['Mudou o horário de atendimento', Severity::Normal],
         'audit.exported' => ['Exportou a atividade', Severity::Important],
         'imports.started' => ['Subiu um zip de conversas', Severity::Normal],
         'imports.finished' => ['Importação de conversas concluída', Severity::Normal],
@@ -50,12 +51,22 @@ class AuditCatalog
         'import' => ['App\\Domains\\Imports\\Models\\Import', 'Importação'],
         'ai_connection' => ['App\\Domains\\Ai\\Models\\AiConnection', 'Conexão de IA'],
         'ai_question' => ['App\\Domains\\Ai\\Models\\AiQuestion', 'Pergunta à IA'],
+        'organization' => ['App\\Domains\\Accounts\\Models\\Organization', 'Empresa'],
     ];
 
     /** Nomes dos campos que aparecem em "Alterações". */
     private const FIELDS = [
         'name' => 'Nome',
         'email' => 'E-mail de entrada',
+        'mon' => 'Segunda',
+        'tue' => 'Terça',
+        'wed' => 'Quarta',
+        'thu' => 'Quinta',
+        'fri' => 'Sexta',
+        'sat' => 'Sábado',
+        'sun' => 'Domingo',
+        'national_holidays' => 'Feriados nacionais',
+        'holidays' => 'Feriados da empresa (quantidade)',
     ];
 
     /** Nomes dos detalhes gravados em `meta`. */

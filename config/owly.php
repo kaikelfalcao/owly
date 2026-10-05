@@ -30,4 +30,22 @@ return [
         'gemini_url' => env('OWLY_GEMINI_URL', 'https://generativelanguage.googleapis.com/v1beta'),
     ],
 
+    /*
+    | Painel (docs/insights.md). Temas que o cliente procura, por palavras.
+    | O padrão é de gráfica rápida; outro ramo troca a lista.
+    */
+    'insights' => [
+        'stalled_quote_days' => 2,
+        'topics' => [
+            'cartao' => ['label' => 'Cartão de visita', 'pattern' => '/cart(ã|a)o|cart(õ|o)es/iu'],
+            'panfleto' => ['label' => 'Panfleto e flyer', 'pattern' => '/panfleto|flyer|folheto/iu'],
+            'banner' => ['label' => 'Banner e lona', 'pattern' => '/banner|lona|faixa/iu'],
+            'adesivo' => ['label' => 'Adesivo e etiqueta', 'pattern' => '/adesivo|etiqueta|r(ó|o)tulo/iu'],
+            'convite' => ['label' => 'Convite', 'pattern' => '/convite/iu'],
+            'camisa' => ['label' => 'Camisa e brinde', 'pattern' => '/camis(a|eta)|caneca|brinde|sacola/iu'],
+            'placa' => ['label' => 'Placa e fachada', 'pattern' => '/placa|fachada|ps\b|acr(í|i)lico/iu'],
+            'impressao' => ['label' => 'Impressão e cópia', 'pattern' => '/impress(ã|a)o|imprimir|c(ó|o)pia|xerox|encaderna/iu'],
+        ],
+    ],
+
 ];

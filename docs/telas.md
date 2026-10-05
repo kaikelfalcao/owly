@@ -2,21 +2,23 @@
 
 Só o dono entra. Toda tela, exceto as de entrar, pede login.
 
-| Tela                       | Endereço                                  | O que tem                                                                                                       |
-| -------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Entrar                     | `/login`                                  | e-mail e senha, "Continuar conectado", coruja e o que a Owly faz                                                |
-| Esqueceu a senha           | `/forgot-password`, `/reset-password/...` | link por e-mail para criar senha nova                                                                           |
-| Verificação em duas etapas | `/two-factor-challenge`                   | código do aplicativo ou código de recuperação                                                                   |
-| Painel                     | `/dashboard`                              | por enquanto, boas-vindas; os insights chegam no passo 6 do escopo                                              |
-| Importar                   | `/importar`                               | subir o zip; cada importação com o que trouxe, período, dias sem mensagem e planilhas que ficaram de fora       |
-| Conversas                  | `/conversas`                              | uma por cliente, a mais recente primeiro, com busca por nome ou telefone e a última mensagem                    |
-| Conversa                   | `/conversas/{id}`                         | ficha do cliente (telefone, primeira e última mensagem, quem atendeu) as mensagens dia a dia e "Perguntar à IA" |
-| IA                         | `/ia`                                     | as conexões com provedores de IA: qual é a padrão, modelo, final da chave; trocar a padrão e remover            |
-| Conectar uma IA            | `/ia/conectar`                            | assistente em três passos: provedor, chave (testada antes de guardar) e modelo                                  |
-| Minha conta › Perfil       | `/conta/perfil`                           | nome e e-mail de entrada                                                                                        |
-| Minha conta › Segurança    | `/conta/seguranca`                        | trocar a senha, ligar ou desligar as duas etapas (pede a senha antes)                                           |
-| Minha conta › Aparência    | `/conta/aparencia`                        | tema claro, escuro ou do sistema                                                                                |
-| Minha conta › Atividade    | `/conta/atividade`                        | a auditoria da empresa: filtros, busca, detalhes e exportação em CSV                                            |
+| Tela                       | Endereço                                  | O que tem                                                                                                           |
+| -------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Entrar                     | `/login`                                  | e-mail e senha, "Continuar conectado", coruja e o que a Owly faz                                                    |
+| Esqueceu a senha           | `/forgot-password`, `/reset-password/...` | link por e-mail para criar senha nova                                                                               |
+| Verificação em duas etapas | `/two-factor-challenge`                   | código do aplicativo ou código de recuperação                                                                       |
+| Painel                     | `/dashboard`                              | clientes esperando, orçamentos parados, tempo até responder, vendas, o que procuram e vendedoras (`docs/painel.md`) |
+| Leitura do painel          | `/dashboard/{leitura}`                    | as conversas por trás de um número do painel, no mesmo período                                                      |
+| Importar                   | `/importar`                               | subir o zip; cada importação com o que trouxe, período, dias sem mensagem e planilhas que ficaram de fora           |
+| Conversas                  | `/conversas`                              | uma por cliente, a mais recente primeiro, com busca por nome ou telefone e a última mensagem                        |
+| Conversa                   | `/conversas/{id}`                         | ficha do cliente (telefone, primeira e última mensagem, quem atendeu) as mensagens dia a dia e "Perguntar à IA"     |
+| IA                         | `/ia`                                     | as conexões com provedores de IA: qual é a padrão, modelo, final da chave; trocar a padrão e remover                |
+| Conectar uma IA            | `/ia/conectar`                            | assistente em três passos: provedor, chave (testada antes de guardar) e modelo                                      |
+| Minha conta › Perfil       | `/conta/perfil`                           | nome e e-mail de entrada                                                                                            |
+| Minha conta › Segurança    | `/conta/seguranca`                        | trocar a senha, ligar ou desligar as duas etapas (pede a senha antes)                                               |
+| Minha conta › Horário      | `/conta/horario`                          | horário de atendimento de cada dia, feriados nacionais e feriados da empresa                                        |
+| Minha conta › Aparência    | `/conta/aparencia`                        | tema claro, escuro ou do sistema                                                                                    |
+| Minha conta › Atividade    | `/conta/atividade`                        | a auditoria da empresa: filtros, busca, detalhes e exportação em CSV                                                |
 
 ## Em toda tela logada
 
@@ -31,7 +33,6 @@ Só o dono entra. Toda tela, exceto as de entrar, pede login.
 - O zip é apagado assim que é lido; ficam só as conversas.
 - Datas e horários aparecem no fuso da empresa, não no do navegador.
 - A conversa mostra imagem, áudio e documento só pelo nome: o arquivo não vem no zip.
-- Orçamentos e vendas entram na ficha do cliente junto com o painel (passo 6).
 - "Perguntar à IA" só aparece com uma IA conectada; sem ela, o quadro convida a conectar. O brilho numa mensagem faz a pergunta ser sobre ela (`docs/ia.md`).
 
 Não existe "excluir conta": o dono é a empresa, e encerrar a empresa vai ser um fluxo próprio do site de vendas.
