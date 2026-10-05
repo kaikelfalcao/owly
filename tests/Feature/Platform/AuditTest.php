@@ -52,7 +52,7 @@ class AuditTest extends TestCase
 
         $this->actingAs($user)
             ->withSession(['auth.password_confirmed_at' => time()])
-            ->put('/settings/password', [
+            ->put('/conta/senha', [
                 'current_password' => 'password',
                 'password' => 'nova-senha-123',
                 'password_confirmation' => 'nova-senha-123',

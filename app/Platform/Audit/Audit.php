@@ -39,7 +39,7 @@ class Audit
         $request = app('request');
 
         return AuditEntry::create([
-            'organization_id' => $organizationId,
+            'organization_id' => $organizationId ?? Context::get('organization_id'),
             'user_id' => $userId ?? $request->user()?->getAuthIdentifier(),
             'action' => $action,
             'subject_type' => $subject?->getMorphClass(),

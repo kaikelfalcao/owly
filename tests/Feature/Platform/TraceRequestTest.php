@@ -43,13 +43,13 @@ class TraceRequestTest extends TestCase
         $telemetry = TelemetryFactory::make($spans, $metrics);
         $this->app->instance(Telemetry::class, $telemetry);
 
-        $this->actingAs(User::factory()->create())->get('/settings/profile')->assertOk();
+        $this->actingAs(User::factory()->create())->get('/conta/perfil')->assertOk();
         $telemetry->flush();
 
         $names = array_map(fn (ImmutableSpan $span) => $span->getName(), $spans->getSpans());
-        $this->assertContains('GET /settings/profile', $names);
+        $this->assertContains('GET /conta/perfil', $names);
 
-        $request = collect($spans->getSpans())->first(fn (ImmutableSpan $span) => $span->getName() === 'GET /settings/profile');
+        $request = collect($spans->getSpans())->first(fn (ImmutableSpan $span) => $span->getName() === 'GET /conta/perfil');
         $this->assertSame(200, $request->getAttributes()->get('http.response.status_code'));
 
         $recorded = array_map(fn ($metric) => $metric->name, $metrics->collect());

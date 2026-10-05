@@ -13,7 +13,10 @@ Monólito Laravel com domínios separados. O objetivo é não repetir o que acon
 | IA         | `app/Domains/Ai`            | conexões com provedores, pedidos à IA, máscara de dados, custo   | regras de negócio  |
 | Plataforma | `app/Platform`              | logs, rastros, métricas, auditoria, notificações                 | regras de negócio  |
 
-As pastas nascem quando o primeiro código do domínio entra. `app/Platform` já existe: telemetria, logs e auditoria (`docs/observabilidade.md`).
+As pastas nascem quando o primeiro código do domínio entra. Já existem:
+
+- `app/Platform`: telemetria, logs, auditoria (`docs/observabilidade.md`) e notificações do sino (`Notice`).
+- `app/Domains/Accounts`: a empresa (`Organization`), o comando `owly:owner` e `CurrentOrganization`, que os outros domínios usam para saber de qual empresa é a requisição. O `User` continua em `app/Models`, onde o Laravel e o Fortify esperam.
 
 ## Regras de fronteira
 
@@ -32,4 +35,4 @@ Cada dependência de fora entra por uma interface do domínio, com a implementa�
 
 ## Empresa desde o primeiro dia
 
-Toda tabela de negócio tem `organization_id`, e toda consulta filtra por ela, mesmo com uma empresa só usando. Rota com `{id}` busca dentro da empresa e responde 404 fora dela.
+Toda tabela de negócio tem `organization_id`, e toda consulta filtra por ela (`CurrentOrganization::id()`), mesmo com uma empresa só usando. Logs e auditoria recebem a empresa pelo contexto do Laravel, preenchido no login. Rota com `{id}` busca dentro da empresa e responde 404 fora dela.

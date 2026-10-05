@@ -1,16 +1,27 @@
 import { Link, router } from '@inertiajs/react';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { UserInfo } from '@/components/user-info';
+import { useAppearance } from '@/hooks/use-appearance';
+import type { Appearance } from '@/hooks/use-appearance';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
 import type { User } from '@/types';
+
+const THEMES: [Appearance, string, LucideIcon][] = [
+    ['light', 'Claro', Sun],
+    ['dark', 'Escuro', Moon],
+    ['system', 'Do sistema', Monitor],
+];
 
 type Props = {
     user: User;
@@ -18,6 +29,7 @@ type Props = {
 
 export function UserMenuContent({ user }: Props) {
     const cleanup = useMobileNavigation();
+    const { appearance, updateAppearance } = useAppearance();
 
     const handleLogout = () => {
         cleanup();
@@ -40,11 +52,30 @@ export function UserMenuContent({ user }: Props) {
                         prefetch
                         onClick={cleanup}
                     >
-                        <Settings className="mr-2" />
-                        Settings
+                        <UserRound className="mr-2" />
+                        Minha conta
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                Tema
+            </DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+                value={appearance}
+                onValueChange={(value) => updateAppearance(value as Appearance)}
+            >
+                {THEMES.map(([value, label, Icon]) => (
+                    <DropdownMenuRadioItem
+                        key={value}
+                        value={value}
+                        onSelect={(event) => event.preventDefault()}
+                    >
+                        <Icon className="mr-2" />
+                        {label}
+                    </DropdownMenuRadioItem>
+                ))}
+            </DropdownMenuRadioGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
                 <Link
@@ -55,7 +86,7 @@ export function UserMenuContent({ user }: Props) {
                     data-test="logout-button"
                 >
                     <LogOut className="mr-2" />
-                    Log out
+                    Sair
                 </Link>
             </DropdownMenuItem>
         </>
