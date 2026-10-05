@@ -1,5 +1,6 @@
 <?php
 
+use App\Platform\Logging\StructuredLogs;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -54,8 +55,19 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => explode(',', (string) env('LOG_STACK', 'json')),
             'ignore_exceptions' => false,
+        ],
+
+        // O canal padrão da Owly: JSON, uma linha por registro, com
+        // request_id, trace_id e usuário vindos do contexto, e sem dado pessoal.
+        // Em contêiner, LOG_JSON_PATH=php://stderr.
+        'json' => [
+            'driver' => 'single',
+            'path' => env('LOG_JSON_PATH', storage_path('logs/laravel.log')),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'replace_placeholders' => true,
+            'tap' => [StructuredLogs::class],
         ],
 
         'single' => [
