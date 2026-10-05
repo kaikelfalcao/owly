@@ -22,6 +22,10 @@ Uma palavra por conceito, igual na tela e no código. Conceito novo entra aqui a
 | Venda                      | `Sale`          | orçamento que virou pedido (comprovante, autorização ou "está pronto") |
 | Notificação                | `Notice`        | aviso no sino do topo (importação concluída, falha…)                   |
 | Atividade                  | `AuditEntry`    | o que aconteceu na conta: entradas, trocas de senha e afins            |
+| Criticidade                | `Severity`      | o quanto uma atividade pede atenção: Normal, Importante ou Crítico     |
+| Resultado                  | `Outcome`       | se a atividade deu certo (Concluída) ou não (Falhou)                   |
+| Canal                      | `Channel`       | por onde a atividade chegou: navegador, comando ou tarefa da fila      |
+| Recurso                    | `subject`       | o registro sobre o qual a atividade foi feita (o login, a importação…) |
 | Minha conta                | `/conta`        | perfil, segurança, aparência e atividade do dono                       |
 | Pergunta à IA              | `AiQuestion`    | pergunta do dono sobre uma conversa ou uma mensagem, com a resposta    |
 | Padrão                     | `is_default`    | a conexão de IA que responde às perguntas                              |

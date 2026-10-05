@@ -16,7 +16,7 @@ Só o dono entra. Toda tela, exceto as de entrar, pede login.
 | Minha conta › Perfil       | `/conta/perfil`                           | nome e e-mail de entrada                                                                                        |
 | Minha conta › Segurança    | `/conta/seguranca`                        | trocar a senha, ligar ou desligar as duas etapas (pede a senha antes)                                           |
 | Minha conta › Aparência    | `/conta/aparencia`                        | tema claro, escuro ou do sistema                                                                                |
-| Minha conta › Atividade    | `/conta/atividade`                        | a auditoria da empresa, mais recente primeiro                                                                   |
+| Minha conta › Atividade    | `/conta/atividade`                        | a auditoria da empresa: filtros, busca, detalhes e exportação em CSV                                            |
 
 ## Em toda tela logada
 
