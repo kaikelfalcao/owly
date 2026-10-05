@@ -48,15 +48,14 @@ export default function ManageTwoFactor(props: Props) {
         <div className="space-y-6">
             <Heading
                 variant="small"
-                title="Two-factor authentication"
-                description="Manage your two-factor authentication settings"
+                title="Verificação em duas etapas"
+                description="Além da senha, um código do celular para entrar"
             />
             {twoFactorEnabled ? (
                 <div className="flex flex-col items-start justify-start space-y-4">
                     <p className="text-sm text-muted-foreground">
-                        You will be prompted for a secure, random pin during
-                        login, which you can retrieve from the TOTP-supported
-                        application on your phone.
+                        Ligada. Ao entrar, a Owly pede o código de 6 números do
+                        aplicativo autenticador do seu celular.
                     </p>
 
                     <div className="relative inline">
@@ -67,7 +66,7 @@ export default function ManageTwoFactor(props: Props) {
                                     type="submit"
                                     disabled={processing}
                                 >
-                                    Disable 2FA
+                                    Desligar
                                 </Button>
                             )}
                         </Form>
@@ -82,17 +81,16 @@ export default function ManageTwoFactor(props: Props) {
             ) : (
                 <div className="flex flex-col items-start justify-start space-y-4">
                     <p className="text-sm text-muted-foreground">
-                        When you enable two-factor authentication, you will be
-                        prompted for a secure pin during login. This pin can be
-                        retrieved from a TOTP-supported application on your
-                        phone.
+                        Com as duas etapas ligadas, a Owly pede, além da senha,
+                        um código de 6 números do aplicativo autenticador do seu
+                        celular (Google Authenticator, Authy, 1Password…).
                     </p>
 
                     <div>
                         {hasSetupData ? (
                             <Button onClick={() => setShowSetupModal(true)}>
                                 <ShieldCheck />
-                                Continue setup
+                                Continuar configuração
                             </Button>
                         ) : (
                             <Form
@@ -101,7 +99,7 @@ export default function ManageTwoFactor(props: Props) {
                             >
                                 {({ processing }) => (
                                     <Button type="submit" disabled={processing}>
-                                        Enable 2FA
+                                        Ligar
                                     </Button>
                                 )}
                             </Form>

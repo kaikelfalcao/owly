@@ -18,15 +18,17 @@ Laravel 13, PHP 8.3+, Inertia 3 + React 19 + TypeScript, Tailwind 4, shadcn/ui, 
 
 ## Comandos
 
-| O quê                           | Comando                                   |
-| ------------------------------- | ----------------------------------------- |
-| Instalar tudo                   | `composer setup`                          |
-| Subir em dev                    | `composer dev`                            |
-| **Checagem completa (a do CI)** | `composer ci:check`                       |
-| Só um teste                     | `php artisan test --filter=nome_do_teste` |
-| Formatar PHP                    | `vendor/bin/pint --dirty`                 |
-| Formatar e lintar o front       | `npm run check:fix`                       |
-| Ligar os hooks do git           | `composer hooks` (o `setup` já liga)      |
+| O quê                           | Comando                                               |
+| ------------------------------- | ----------------------------------------------------- |
+| Instalar tudo                   | `composer setup`                                      |
+| Subir em dev                    | `composer dev`                                        |
+| **Checagem completa (a do CI)** | `composer ci:check`                                   |
+| Só um teste                     | `php artisan test --filter=nome_do_teste`             |
+| Formatar PHP                    | `vendor/bin/pint --dirty`                             |
+| Formatar e lintar o front       | `npm run check:fix`                                   |
+| Ligar os hooks do git           | `composer hooks` (o `setup` já liga)                  |
+| Login de dev (dados inventados) | `php artisan db:seed`: `dono@owly.test`, senha `owly` |
+| Criar empresa e dono de verdade | `php artisan owly:owner` (pede a senha)               |
 
 ## Definição de pronto
 

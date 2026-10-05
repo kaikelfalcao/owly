@@ -20,5 +20,6 @@
     "Profile updated.": "Perfil atualizado.",
     "Invalid credential format.": "Formato de credencial inválido.",
     "Passkey registration session expired. Please try again.": "O cadastro da chave expirou. Tente de novo.",
-    "Passkey verification session expired. Please try again.": "A verificação da chave expirou. Tente de novo."
+    "Passkey verification session expired. Please try again.": "A verificação da chave expirou. Tente de novo.",
+    "Reset Password Notification": "Criar senha nova na Owly"
 }
