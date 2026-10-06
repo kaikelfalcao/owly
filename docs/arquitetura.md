@@ -27,7 +27,7 @@ As pastas nascem quando o primeiro código do domínio entra. Já existem:
 1. Um domínio só lê e grava as próprias tabelas e models.
 2. Para usar outro domínio: o contrato público dele (`app/Domains/<Nome>/Contracts`) ou um evento que ele publica (`Events`). Nada de importar model alheio.
 3. A direção é sempre esta: Importação grava em Conversas pelo contrato; Leitura lê Conversas pelo contrato; IA é chamada por quem precisa, pelo contrato.
-4. `tests/Unit/ArchitectureTest.php` garante isso: de outro domínio, só `Contracts`, `Data`, `Events` e o `CurrentOrganization` de Conta.
+4. `tests/Unit/ArchitectureTest.php` garante isso: de outro domínio, só `Contracts`, `Data`, `Events` e, de Conta, o que faz o isolamento por empresa (`CurrentOrganization`, o trait `BelongsToOrganization` e o middleware de job `ForOrganization`).
 
 ## Provedores como adaptadores
 
@@ -40,3 +40,12 @@ Cada dependência de fora entra por uma interface do domínio, com a implementa�
 ## Empresa desde o primeiro dia
 
 Toda tabela de negócio tem `organization_id`, e toda consulta filtra por ela (`CurrentOrganization::id()`), mesmo com uma empresa só usando. Logs e auditoria recebem a empresa pelo contexto do Laravel, preenchido no login. Rota com `{id}` busca dentro da empresa e responde 404 fora dela.
+
+O filtro não depende de ninguém lembrar dele:
+
+- **Modelos de negócio usam `BelongsToOrganization`** (Conta). O trait acrescenta `organization_id = empresa do contexto` em toda consulta e preenche a empresa nos registros novos. Sem empresa no contexto, a consulta lança exceção em vez de devolver dados de todas as empresas. Registro novo com outra empresa, dentro de um contexto, também é recusado. Só `Organization` fica sem o trait; `User`, auditoria e notificações não são modelos de domínio.
+- **De onde vem a empresa:** na requisição, do usuário logado. Em job, do middleware `ForOrganization`, com o id que o job guarda (job guarda ids, nunca modelos: o modelo seria buscado antes do middleware, sem contexto). O `failed()` do job não passa pelo middleware e abre o contexto com `runAs`. Em comando e teste, `CurrentOrganization::runAs($id, fn)`; nos testes, `inOrganization()` e `acrossOrganizations()` do `TestCase`.
+- **Serviços que recebem o id da empresa** (os contratos de Conversas) chamam `CurrentOrganization::ensure($id, fn)`: com outra empresa no contexto é erro de programação; sem contexto, abre um só para a chamada.
+- **Ver todas as empresas** só com `across($motivo, fn)`, e só em comandos (`Console/`) ou na futura administração (`app/Platform/Admin`). O motivo vai para o log.
+- **`Model::insert()` em lote** não passa pelo `creating`: quem usa monta as linhas com `organization_id`.
+- **O `ArchitectureTest` reprova** modelo de domínio sem o trait e, em `app/`, consultas que passam por cima do escopo: `DB::table`, `DB::select` e parentes, `getQuery()`, `toBase()`, `withoutGlobalScope` e `join`. `DB::transaction` e `DB::raw` dentro de consulta Eloquent continuam liberados.

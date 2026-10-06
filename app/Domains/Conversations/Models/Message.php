@@ -2,6 +2,7 @@
 
 namespace App\Domains\Conversations\Models;
 
+use App\Domains\Accounts\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -25,6 +26,8 @@ use Illuminate\Support\Carbon;
  */
 class Message extends Model
 {
+    use BelongsToOrganization;
+
     protected $guarded = ['id'];
 
     protected function casts(): array

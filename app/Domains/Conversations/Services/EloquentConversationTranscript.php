@@ -2,6 +2,7 @@
 
 namespace App\Domains\Conversations\Services;
 
+use App\Domains\Accounts\CurrentOrganization;
 use App\Domains\Conversations\Contracts\ConversationTranscript;
 use App\Domains\Conversations\Data\Transcript;
 use App\Domains\Conversations\Models\Conversation;
@@ -9,7 +10,14 @@ use App\Domains\Conversations\Models\Message;
 
 class EloquentConversationTranscript implements ConversationTranscript
 {
+    public function __construct(private readonly CurrentOrganization $organization) {}
+
     public function for(int $organizationId, int $conversationId, string $timezone): Transcript
+    {
+        return $this->organization->ensure($organizationId, fn () => $this->read($organizationId, $conversationId, $timezone));
+    }
+
+    private function read(int $organizationId, int $conversationId, string $timezone): Transcript
     {
         $conversation = Conversation::where('organization_id', $organizationId)
             ->with('contact')

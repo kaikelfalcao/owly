@@ -2,6 +2,7 @@
 
 namespace App\Domains\Conversations\Services;
 
+use App\Domains\Accounts\CurrentOrganization;
 use App\Domains\Conversations\Contracts\ConversationStore;
 use App\Domains\Conversations\Data\IncomingConversation;
 use App\Domains\Conversations\Data\IncomingMessage;
@@ -14,9 +15,11 @@ use Illuminate\Support\Facades\DB;
 
 class EloquentConversationStore implements ConversationStore
 {
+    public function __construct(private readonly CurrentOrganization $organization) {}
+
     public function store(int $organizationId, string $source, IncomingConversation $incoming): StoreResult
     {
-        return DB::transaction(function () use ($organizationId, $source, $incoming) {
+        return $this->organization->ensure($organizationId, fn () => DB::transaction(function () use ($organizationId, $source, $incoming) {
             $contact = Contact::firstOrCreate(
                 ['organization_id' => $organizationId, 'external_key' => $incoming->contactKey],
                 ['phone' => $incoming->contactPhone, 'name' => $incoming->contactName],
@@ -76,7 +79,7 @@ class EloquentConversationStore implements ConversationStore
                 newMessages: count($rows),
                 knownMessages: count($incoming->messages) - count($rows),
             );
-        });
+        }));
     }
 
     /**

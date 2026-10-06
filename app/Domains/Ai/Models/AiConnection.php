@@ -2,6 +2,7 @@
 
 namespace App\Domains\Ai\Models;
 
+use App\Domains\Accounts\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -23,6 +24,8 @@ use Illuminate\Support\Carbon;
  */
 class AiConnection extends Model
 {
+    use BelongsToOrganization;
+
     protected $guarded = ['id'];
 
     protected $hidden = ['api_key'];

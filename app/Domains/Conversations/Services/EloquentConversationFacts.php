@@ -2,6 +2,7 @@
 
 namespace App\Domains\Conversations\Services;
 
+use App\Domains\Accounts\CurrentOrganization;
 use App\Domains\Conversations\Contracts\ConversationFacts;
 use App\Domains\Conversations\Data\ConversationSummary;
 use App\Domains\Conversations\Data\MessageFact;
@@ -11,34 +12,41 @@ use App\Domains\Conversations\Models\Conversation;
 use App\Domains\Conversations\Models\Message;
 use App\Domains\Conversations\Models\Seller;
 use Carbon\CarbonImmutable;
+use Closure;
 
 class EloquentConversationFacts implements ConversationFacts
 {
+    public function __construct(private readonly CurrentOrganization $organization) {}
+
     public function latestMessageAt(int $organizationId): ?CarbonImmutable
     {
-        $at = Conversation::where('organization_id', $organizationId)->max('last_message_at');
+        $at = $this->organization->ensure($organizationId, fn () => Conversation::where('organization_id', $organizationId)->max('last_message_at'));
 
         return $at ? CarbonImmutable::parse($at, 'UTC') : null;
     }
 
     public function timelines(int $organizationId, ?CarbonImmutable $since): iterable
     {
-        $sellers = Seller::where('organization_id', $organizationId)->pluck('name', 'id')->all();
+        // Gerador: cada consulta abre o contexto da empresa por conta própria,
+        // porque quem consome pode iterar depois de o contexto ter fechado.
+        $within = fn (Closure $query) => $this->organization->ensure($organizationId, $query);
 
-        $ids = Conversation::where('organization_id', $organizationId)
+        $sellers = $within(fn () => Seller::where('organization_id', $organizationId)->pluck('name', 'id')->all());
+
+        $ids = $within(fn () => Conversation::where('organization_id', $organizationId)
             ->when($since, fn ($q) => $q->where('last_message_at', '>=', $since))
             ->orderBy('id')
-            ->pluck('id');
+            ->pluck('id'));
 
         // Em blocos, para não carregar todas as mensagens da empresa de uma vez.
         foreach ($ids->chunk(200) as $chunk) {
-            $messages = Message::where('organization_id', $organizationId)
+            $messages = $within(fn () => Message::where('organization_id', $organizationId)
                 ->whereIn('conversation_id', $chunk->all())
                 ->orderBy('conversation_id')
                 ->orderBy('sent_at')
                 ->orderBy('id')
                 ->get(['id', 'conversation_id', 'sent_at', 'direction', 'author', 'seller_id', 'body', 'media_type', 'event'])
-                ->groupBy('conversation_id');
+                ->groupBy('conversation_id'));
 
             foreach ($chunk as $id) {
                 yield new Timeline($id, ($messages[$id] ?? collect())->map(fn (Message $m) => new MessageFact(
@@ -57,10 +65,10 @@ class EloquentConversationFacts implements ConversationFacts
 
     public function summaries(int $organizationId, array $conversationIds): array
     {
-        return Conversation::where('organization_id', $organizationId)
+        return $this->organization->ensure($organizationId, fn () => Conversation::where('organization_id', $organizationId)
             ->whereIn('id', $conversationIds)
             ->with('contact')
-            ->get()
+            ->get())
             ->mapWithKeys(fn (Conversation $c) => [$c->id => new ConversationSummary(
                 id: $c->id,
                 contact: $c->contact->displayName(),

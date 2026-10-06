@@ -25,7 +25,7 @@ class ConversationStoreTest extends TestCase
         $this->assertTrue($result->created);
         $this->assertSame(2, $result->newMessages);
 
-        $conversation = Conversation::sole();
+        $conversation = $this->inOrganization($organization, fn () => Conversation::sole());
         $this->assertSame(2, $conversation->messages_count);
         $this->assertSame('2026-09-01 12:00:00', $conversation->first_message_at->format('Y-m-d H:i:s'));
         $this->assertSame('2026-09-01 12:01:00', $conversation->last_message_at->format('Y-m-d H:i:s'));
@@ -41,8 +41,10 @@ class ConversationStoreTest extends TestCase
         $this->assertFalse($result->created);
         $this->assertSame(1, $result->newMessages);
         $this->assertSame(2, $result->knownMessages);
-        $this->assertSame(3, Message::count());
-        $this->assertSame(3, Conversation::sole()->messages_count);
+        $this->inOrganization($organization, function (): void {
+            $this->assertSame(3, Message::count());
+            $this->assertSame(3, Conversation::sole()->messages_count);
+        });
     }
 
     public function test_o_mesmo_cliente_em_outra_empresa_e_outra_conversa(): void
@@ -50,8 +52,8 @@ class ConversationStoreTest extends TestCase
         $this->store(Organization::factory()->create()->id, ['a']);
         $this->store(Organization::factory()->create()->id, ['a']);
 
-        $this->assertSame(2, Conversation::count());
-        $this->assertSame(2, Message::count());
+        $this->assertDatabaseCount('conversations', 2);
+        $this->assertDatabaseCount('messages', 2);
     }
 
     /**

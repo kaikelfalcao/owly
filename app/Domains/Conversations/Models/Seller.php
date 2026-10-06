@@ -2,6 +2,7 @@
 
 namespace App\Domains\Conversations\Models;
 
+use App\Domains\Accounts\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,4 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $name
  */
 #[Fillable(['organization_id', 'name'])]
-class Seller extends Model {}
+class Seller extends Model
+{
+    use BelongsToOrganization;
+}

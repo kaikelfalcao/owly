@@ -2,6 +2,7 @@
 
 namespace App\Domains\Imports\Models;
 
+use App\Domains\Accounts\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -26,6 +27,8 @@ use Illuminate\Support\Carbon;
  */
 class Import extends Model
 {
+    use BelongsToOrganization;
+
     public const PENDING = 'pending';
 
     public const RUNNING = 'running';

@@ -2,6 +2,8 @@
 
 namespace App\Domains\Imports\Jobs;
 
+use App\Domains\Accounts\CurrentOrganization;
+use App\Domains\Accounts\Jobs\ForOrganization;
 use App\Domains\Conversations\Contracts\ConversationStore;
 use App\Domains\Imports\Contracts\Importer;
 use App\Domains\Imports\Data\ImportFailed;
@@ -34,7 +36,15 @@ class ProcessImport implements ShouldQueue
 
     public int $timeout = 600;
 
-    public function __construct(public int $importId, public string $timezone) {}
+    public function __construct(public int $organizationId, public int $importId, public string $timezone) {}
+
+    /**
+     * @return list<object>
+     */
+    public function middleware(): array
+    {
+        return [new ForOrganization($this->organizationId)];
+    }
 
     public function handle(Importer $importer, ConversationStore $store, Audit $audit, Telemetry $telemetry): void
     {
@@ -119,11 +129,14 @@ class ProcessImport implements ShouldQueue
      */
     public function failed(Throwable $e): void
     {
-        $import = Import::find($this->importId);
+        // O middleware não envolve o failed(): a empresa entra aqui à mão.
+        app(CurrentOrganization::class)->runAs($this->organizationId, function (): void {
+            $import = Import::find($this->importId);
 
-        if ($import !== null && $import->status !== Import::FAILED) {
-            $this->fail($import, 'unexpected', app(Audit::class));
-        }
+            if ($import !== null && $import->status !== Import::FAILED) {
+                $this->fail($import, 'unexpected', app(Audit::class));
+            }
+        });
 
         Log::error('importação falhou', ['import_id' => $this->importId, 'error' => $e::class]);
     }

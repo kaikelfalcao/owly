@@ -2,6 +2,7 @@
 
 namespace App\Domains\Ai\Models;
 
+use App\Domains\Accounts\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -27,6 +28,8 @@ use Illuminate\Support\Carbon;
  */
 class AiQuestion extends Model
 {
+    use BelongsToOrganization;
+
     public const DONE = 'done';
 
     public const FAILED = 'failed';

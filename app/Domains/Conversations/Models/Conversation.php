@@ -2,6 +2,7 @@
 
 namespace App\Domains\Conversations\Models;
 
+use App\Domains\Accounts\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +23,8 @@ use Illuminate\Support\Carbon;
 #[Fillable(['organization_id', 'contact_id', 'first_message_at', 'last_message_at', 'messages_count'])]
 class Conversation extends Model
 {
+    use BelongsToOrganization;
+
     protected function casts(): array
     {
         return [
