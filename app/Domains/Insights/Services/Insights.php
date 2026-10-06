@@ -2,11 +2,11 @@
 
 namespace App\Domains\Insights\Services;
 
+use App\Domains\Accounts\Data\WorkingCalendar;
 use App\Domains\Conversations\Data\MessageFact;
 use App\Domains\Conversations\Data\Timeline;
 use App\Domains\Insights\Data\Period;
 use App\Domains\Insights\Data\Turn;
-use App\Domains\Insights\Rules\BusinessHours;
 use App\Domains\Insights\Rules\ClientTurns;
 use App\Domains\Insights\Rules\ClosingMessage;
 use App\Domains\Insights\Rules\Median;
@@ -53,7 +53,7 @@ class Insights
 
     public function __construct(
         private readonly Period $period,
-        private readonly BusinessHours $hours,
+        private readonly WorkingCalendar $hours,
         private readonly Topics $topicRules,
         private readonly int $stalledDays,
     ) {}

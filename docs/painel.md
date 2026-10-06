@@ -8,7 +8,7 @@ O que a Owly lê nas conversas e mostra ao dono. Cada número abre a lista das c
 
 ## Horário de atendimento
 
-Toda espera conta só o tempo com a empresa aberta (`BusinessHours`). O cliente que escreve às 19h da sexta e é atendido às 8h05 da segunda esperou 5 minutos, não um fim de semana.
+Toda espera conta só o tempo com a empresa aberta (`WorkingCalendar`, de Conta). O cliente que escreve às 19h da sexta e é atendido às 8h05 da segunda esperou 5 minutos, não um fim de semana.
 
 - O dono ajusta em **Minha conta › Horário** (`/conta/horario`): abertura e fechamento de cada dia, ou fechado.
 - Padrão, enquanto ninguém mexe: segunda a sexta das 8h às 18h, sábado das 8h às 12h, domingo fechado. O painel avisa que está usando o padrão.

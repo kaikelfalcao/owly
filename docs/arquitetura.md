@@ -19,9 +19,9 @@ As pastas nascem quando o primeiro código do domínio entra. Já existem:
 - `app/Domains/Conversations`: clientes, vendedoras, conversas e mensagens. Quem grava usa o contrato `ConversationStore`, que recebe `IncomingConversation` sem saber de onde veio e ignora mensagem que já existe (`external_id` por cliente). Cada mensagem guarda o cliente (`contact_id`) e a importação que a trouxe primeiro (`import_id`), sem depender da conversa. As telas leem por `ConversationQueries`.
 - `app/Domains/Imports`: a tabela `imports`, o serviço `StartImport` (guarda o zip, recusa arquivo repetido e manda para a fila), o job `ProcessImport` (lê pelo `Importer`, grava pelo `ConversationStore`, apaga o zip, audita e avisa no sino) e a regra `DateGaps`. O formato ligado vem de `owly.imports.format`.
 - `app/Domains/Ai`: conexões com provedores (`AiConnection`), o contrato `AiProvider` com o adaptador `Gemini`, a máscara (`Redactor`) e as perguntas sobre conversas (`docs/ia.md`). Lê a conversa pelo contrato `ConversationTranscript` e aparece na tela da conversa por `ConversationPanels`, o espaço que Conversas abre para outros domínios.
-- `app/Domains/Insights`: as leituras do painel (`docs/painel.md`). Uma regra por classe em `Rules` (`BusinessHours`, `Holidays`, `ClientTurns`, `ClosingMessage`, `QuoteMessage`, `SaleSignal`, `Topics`); o serviço `Insights` passa uma vez pelas conversas e o `Dashboard` monta o painel e as listas. Lê as conversas pelo contrato `ConversationFacts`, a última importação por `ImportHealth` e o horário da empresa por `CurrentOrganization::calendar()`.
+- `app/Domains/Insights`: as leituras do painel (`docs/painel.md`). Uma regra por classe em `Rules` (`ClientTurns`, `ClosingMessage`, `QuoteMessage`, `SaleSignal`, `Topics`); o serviço `Insights` passa uma vez pelas conversas e o `Dashboard` monta o painel e as listas. Lê as conversas pelo contrato `ConversationFacts`, a última importação por `ImportHealth` e o horário da empresa por `CurrentOrganization::calendar()`.
 - `app/Console`: comandos de operação que juntam domínios. Hoje só o `owly:integrity`, que tira a foto dos dados de uma empresa antes de uma migração e confere depois (veja "Mensagens" abaixo). Usa os contratos de Conversas e o `Dashboard` de Leitura, como a tela faz.
-- `app/Domains/Accounts`: a empresa (`Organization`, com o horário de atendimento e os feriados), o comando `owly:owner` e `CurrentOrganization`, que os outros domínios usam para saber de qual empresa é a requisição e, por `calendar()`, o horário dela. O `User` continua em `app/Models`, onde o Laravel e o Fortify esperam.
+- `app/Domains/Accounts`: a empresa (`Organization`, com o horário de atendimento e os feriados), o calendário dela (`WorkingCalendar`, com as regras `BusinessHours` e `Holidays`), o comando `owly:owner` e `CurrentOrganization`, que os outros domínios usam para saber de qual empresa é a requisição e, por `calendar()`, o horário dela. O `User` continua em `app/Models`, onde o Laravel e o Fortify esperam.
 
 ## Regras de fronteira
 
@@ -29,6 +29,10 @@ As pastas nascem quando o primeiro código do domínio entra. Já existem:
 2. Para usar outro domínio: o contrato público dele (`app/Domains/<Nome>/Contracts`) ou um evento que ele publica (`Events`). Nada de importar model alheio.
 3. A direção é sempre esta: Importação grava em Conversas pelo contrato; Leitura lê Conversas pelo contrato; IA é chamada por quem precisa, pelo contrato.
 4. `tests/Unit/ArchitectureTest.php` garante isso: de outro domínio, só `Contracts`, `Data`, `Events` e, de Conta, o que faz o isolamento por empresa (`CurrentOrganization`, o trait `BelongsToOrganization` e o middleware de job `ForOrganization`).
+
+## Um calendário só
+
+Dia útil e hora útil têm uma definição só: o `WorkingCalendar` de Conta (expediente por dia, feriados nacionais quando ligados e feriados da empresa). O corte dos atendimentos, o orçamento parado, o sem resposta e a demora perguntam a ele (`isOpen`, `isWorkingDay`, `secondsBetween`, `workingDaysBetween`). O `ArchitectureTest` reprova outra conta de feriado ou expediente fora de Conta.
 
 ## Provedores como adaptadores
 

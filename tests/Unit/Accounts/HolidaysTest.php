@@ -1,8 +1,8 @@
 <?php
 
-namespace Tests\Unit\Insights;
+namespace Tests\Unit\Accounts;
 
-use App\Domains\Insights\Rules\Holidays;
+use App\Domains\Accounts\Rules\Holidays;
 use PHPUnit\Framework\TestCase;
 
 class HolidaysTest extends TestCase
