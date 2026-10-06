@@ -66,7 +66,7 @@ class ProcessImport implements ShouldQueue
             $last = null;
 
             foreach ($reading->conversations as $conversation) {
-                $result = $store->store($import->organization_id, 'zip', $conversation);
+                $result = $store->store($import->organization_id, 'zip', $conversation, $import->id);
 
                 if ($result->created) {
                     $stats['conversations_new']++;
