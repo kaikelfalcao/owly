@@ -9,9 +9,9 @@ use App\Domains\Imports\Jobs\ProcessImport;
 use App\Domains\Imports\Models\Import;
 use App\Models\User;
 use App\Platform\Audit\AuditEntry;
+use App\Platform\Queue\OneAtATime;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
@@ -132,10 +132,10 @@ class ImportTest extends TestCase
     public function test_duas_importacoes_da_mesma_empresa_nao_rodam_juntas(): void
     {
         $job = new ProcessImport(7, 1, 'America/Sao_Paulo');
-        $lock = collect($job->middleware())->first(fn ($middleware) => $middleware instanceof WithoutOverlapping);
+        $lock = collect($job->middleware())->first(fn ($middleware) => $middleware instanceof OneAtATime);
 
         $this->assertNotNull($lock);
-        $this->assertSame('import:organization:7', $lock->key);
+        $this->assertSame('organization:7:data', $lock->key);
     }
 
     public function test_o_mesmo_arquivo_duas_vezes_e_recusado(): void

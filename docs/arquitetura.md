@@ -19,7 +19,7 @@ As pastas nascem quando o primeiro código do domínio entra. Já existem:
 - `app/Domains/Conversations`: clientes, vendedoras, conversas e mensagens. Quem grava usa o contrato `ConversationStore`, que recebe `IncomingConversation` sem saber de onde veio e ignora mensagem que já existe (`external_id` por cliente). Cada mensagem guarda o cliente (`contact_id`) e a importação que a trouxe primeiro (`import_id`), sem depender da conversa. A conversa é um atendimento (veja "Atendimentos" abaixo): o `ConversationStore` corta o histórico de cada cliente ao gravar, e o comando `owly:recut` refaz o corte de uma empresa. As telas leem por `ConversationQueries`.
 - `app/Domains/Imports`: a tabela `imports`, o serviço `StartImport` (guarda o zip, recusa arquivo repetido e manda para a fila), o job `ProcessImport` (lê pelo `Importer`, grava pelo `ConversationStore`, apaga o zip, audita e avisa no sino) e a regra `DateGaps`. O formato ligado vem de `owly.imports.format`.
 - `app/Domains/Ai`: conexões com provedores (`AiConnection`), o contrato `AiProvider` com o adaptador `Gemini`, a máscara (`Redactor`) e as perguntas sobre conversas (`docs/ia.md`). Lê a conversa pelo contrato `ConversationTranscript` e aparece na tela da conversa por `ConversationPanels`, o espaço que Conversas abre para outros domínios.
-- `app/Domains/Insights`: as leituras do painel (`docs/painel.md`). Uma regra por classe em `Rules` (`ClientTurns`, `ClosingMessage`, `QuoteMessage`, `SaleSignal`, `Topics`); o serviço `Insights` passa uma vez pelas conversas e o `Dashboard` monta o painel e as listas. Lê as conversas pelo contrato `ConversationFacts`, a última importação por `ImportHealth` e o horário da empresa por `CurrentOrganization::calendar()`.
+- `app/Domains/Insights`: as leituras do painel (`docs/painel.md`) e as oportunidades (veja "Oportunidades" abaixo). Uma regra por classe em `Rules` (`ClientTurns`, `ClosingMessage`, `QuoteMessage`, `SaleSignal`, `Topics`, `OpportunityRule`); o serviço `Insights` passa uma vez pelas conversas e o `Dashboard` monta o painel e as listas. Lê as conversas pelo contrato `ConversationFacts`, a última importação por `ImportHealth` e o horário da empresa por `CurrentOrganization::calendar()`. Recalcula o que guarda quando ouve `ImportFinished` (de Importação) e `ConversationsRecut` (de Conversas).
 - `app/Console`: comandos de operação que juntam domínios. Hoje só o `owly:integrity`, que tira a foto dos dados de uma empresa antes de uma migração e confere depois (veja "Mensagens" abaixo). Usa os contratos de Conversas e o `Dashboard` de Leitura, como a tela faz.
 - `app/Domains/Accounts`: a empresa (`Organization`, com o horário de atendimento e os feriados), o calendário dela (`WorkingCalendar`, com as regras `BusinessHours` e `Holidays`), o comando `owly:owner` e `CurrentOrganization`, que os outros domínios usam para saber de qual empresa é a requisição e, por `calendar()`, o horário dela. O `User` continua em `app/Models`, onde o Laravel e o Fortify esperam.
 
@@ -28,7 +28,8 @@ As pastas nascem quando o primeiro código do domínio entra. Já existem:
 1. Um domínio só lê e grava as próprias tabelas e models.
 2. Para usar outro domínio: o contrato público dele (`app/Domains/<Nome>/Contracts`) ou um evento que ele publica (`Events`). Nada de importar model alheio.
 3. A direção é sempre esta: Importação grava em Conversas pelo contrato; Leitura lê Conversas pelo contrato; IA é chamada por quem precisa, pelo contrato.
-4. `tests/Unit/ArchitectureTest.php` garante isso: de outro domínio, só `Contracts`, `Data`, `Events` e, de Conta, o que faz o isolamento por empresa (`CurrentOrganization`, o trait `BelongsToOrganization` e o middleware de job `ForOrganization`).
+4. Uma tabela de um domínio pode ter chave estrangeira para a de outro (as oportunidades apontam para mensagens): a chave protege o dado no banco, mas o código continua lendo pelo contrato.
+5. `tests/Unit/ArchitectureTest.php` garante isso: de outro domínio, só `Contracts`, `Data`, `Events` e, de Conta, o que faz o isolamento por empresa (`CurrentOrganization`, o trait `BelongsToOrganization` e o middleware de job `ForOrganization`).
 
 ## Um calendário só
 
@@ -67,7 +68,7 @@ A tabela `conversations` guarda atendimentos: um cliente tem vários, cada um co
 - **Responsável** (`seller_id`): a vendedora com mais mensagens no atendimento; no empate, quem respondeu primeiro.
 - **Ao gravar**, por cliente e numa transação só: separa as mensagens novas; se todas são depois do começo do último atendimento, recalcula só a partir dele; se veio mensagem mais antiga, recalcula o histórico inteiro. O atendimento que começa na mesma mensagem fica com o mesmo id; quando dois se juntam, fica o mais antigo e o outro é apagado depois de as mensagens mudarem de lugar. Se algo falha no meio, nada muda.
 - **`ConversationsRecut`** sai depois do commit quando atendimentos que já existiam perderam mensagens ou foram apagados. A IA escuta e leva cada pergunta para o atendimento da mensagem em foco.
-- **Duas importações da mesma empresa** não rodam juntas: o `ProcessImport` tem a trava `WithoutOverlapping` pela empresa.
+- **Duas importações da mesma empresa** não rodam juntas: o `ProcessImport` tem a trava `OneAtATime` pela empresa (`app/Platform/Queue`), a mesma do recálculo das oportunidades.
 - **`owly:recut --empresa=ID [--dry-run]`** refaz todos os atendimentos com o calendário de hoje, um cliente por transação. Rodar de novo sem mudança não muda nada. Mudar o horário ou os feriados não refaz atendimentos fechados sozinho: o comando é rodado de propósito.
 
 Para levar uma base que ainda tem uma conversa por cliente (antes da migração `2026_10_06_000002`):
@@ -78,6 +79,18 @@ Para levar uma base que ainda tem uma conversa por cliente (antes da migração 
 4. `php artisan owly:integrity --empresa=ID --compare`
 
 Até o passo 3, um atendimento por cliente é um estado válido, só mais grosso; uma importação nova já corta os clientes que vierem nela.
+
+## Oportunidades
+
+Uma oportunidade (`opportunities`, em Leitura) é "o cliente recebeu preço e ainda pode comprar". A mensagem que deu origem (`anchor_message_id`, única) é a identidade dela: o recálculo acha a linha pela âncora e atualiza, nunca duplica. A regra é `Insights/Rules/OpportunityRule`, sobre o histórico inteiro do cliente (`ConversationFacts::histories`), atravessando os atendimentos.
+
+- **Aberta** (`open`): orçamento da empresa (`QuoteMessage`) sem outra aberta. Reenvio e ajuste de preço entram na aberta.
+- **Ganha** (`won`): o cliente fechou (`SaleSignal`) depois do orçamento, mesmo em outro atendimento; `closing_message_id` é a mensagem de venda. Venda sem orçamento antes nasce ganha, uma por atendimento, para a conta de vendas não cair.
+- **Perdida** (`lost`): só o dono marca, com motivo (`loss_reason`: preço, prazo, comprou em outro lugar, parou de responder, desistiu, outro).
+- **Não era oportunidade** (`discarded`): só o dono marca, quando a regra errou (arte, segunda via de boleto, tabela). Fica fora de toda conta de oportunidade, conversão e perda: as métricas partem de `Opportunity::countable()`. Ela segura os orçamentos e vendas seguintes do mesmo atendimento, para o dono não descartar duas vezes.
+- **Decisão do dono vence.** Toda ação do dono grava `decided_by` e `decided_at`, e a regra não mexe mais na linha: só acompanha o atendimento onde a âncora está quando o corte muda. Decidida segura os orçamentos seguintes até a hora da decisão; aberta de novo pelo dono segura tudo, e dali em diante quem fecha é ele. Linha da regra sem decisão que deixou de ser esperada é apagada.
+- **Quando recalcula.** O `ProcessImport` publica `ImportFinished` no fim; Leitura enfileira `RefreshInsights` para os clientes que receberam mensagem nova, com a mesma trava da importação. Atendimentos refeitos (`ConversationsRecut`) recalculam os clientes na hora. Nada disso chama IA. `owly:insights --empresa=ID` recalcula todos os clientes de uma empresa: roda uma vez depois de subir a tabela, porque as importações antigas não passaram pela regra.
+- **Auditoria:** `insights.opportunity_won`, `_lost` (com `reason`), `_discarded` e `_reopened`, com a situação antes e depois.
 
 ## Mensagens
 

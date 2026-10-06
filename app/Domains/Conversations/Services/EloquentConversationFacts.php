@@ -86,6 +86,17 @@ class EloquentConversationFacts implements ConversationFacts
         }
     }
 
+    public function contactsWithMessages(int $organizationId, ?int $importId = null): array
+    {
+        return $this->organization->ensure($organizationId, fn (): array => Message::where('organization_id', $organizationId)
+            ->when($importId !== null, fn ($query) => $query->where('import_id', $importId))
+            ->distinct()
+            ->orderBy('contact_id')
+            ->pluck('contact_id')
+            ->map(fn ($id) => (int) $id)
+            ->all());
+    }
+
     public function conversationsOfMessages(int $organizationId, array $messageIds): array
     {
         return $this->organization->ensure($organizationId, function () use ($organizationId, $messageIds): array {
