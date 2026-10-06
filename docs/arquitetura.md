@@ -16,7 +16,7 @@ Monólito Laravel com domínios separados. O objetivo é não repetir o que acon
 As pastas nascem quando o primeiro código do domínio entra. Já existem:
 
 - `app/Platform`: telemetria, logs, auditoria (`docs/observabilidade.md`) e notificações do sino (`Notice`).
-- `app/Domains/Conversations`: clientes, vendedoras, conversas e mensagens. Quem grava usa o contrato `ConversationStore`, que recebe `IncomingConversation` sem saber de onde veio e ignora mensagem que já existe (`external_id` por cliente). Cada mensagem guarda o cliente (`contact_id`) e a importação que a trouxe primeiro (`import_id`), sem depender da conversa. As telas leem por `ConversationQueries`.
+- `app/Domains/Conversations`: clientes, vendedoras, conversas e mensagens. Quem grava usa o contrato `ConversationStore`, que recebe `IncomingConversation` sem saber de onde veio e ignora mensagem que já existe (`external_id` por cliente). Cada mensagem guarda o cliente (`contact_id`) e a importação que a trouxe primeiro (`import_id`), sem depender da conversa. A conversa é um atendimento (veja "Atendimentos" abaixo): o `ConversationStore` corta o histórico de cada cliente ao gravar, e o comando `owly:recut` refaz o corte de uma empresa. As telas leem por `ConversationQueries`.
 - `app/Domains/Imports`: a tabela `imports`, o serviço `StartImport` (guarda o zip, recusa arquivo repetido e manda para a fila), o job `ProcessImport` (lê pelo `Importer`, grava pelo `ConversationStore`, apaga o zip, audita e avisa no sino) e a regra `DateGaps`. O formato ligado vem de `owly.imports.format`.
 - `app/Domains/Ai`: conexões com provedores (`AiConnection`), o contrato `AiProvider` com o adaptador `Gemini`, a máscara (`Redactor`) e as perguntas sobre conversas (`docs/ia.md`). Lê a conversa pelo contrato `ConversationTranscript` e aparece na tela da conversa por `ConversationPanels`, o espaço que Conversas abre para outros domínios.
 - `app/Domains/Insights`: as leituras do painel (`docs/painel.md`). Uma regra por classe em `Rules` (`ClientTurns`, `ClosingMessage`, `QuoteMessage`, `SaleSignal`, `Topics`); o serviço `Insights` passa uma vez pelas conversas e o `Dashboard` monta o painel e as listas. Lê as conversas pelo contrato `ConversationFacts`, a última importação por `ImportHealth` e o horário da empresa por `CurrentOrganization::calendar()`.
@@ -55,10 +55,34 @@ O filtro não depende de ninguém lembrar dele:
 - **`Model::insert()` em lote** não passa pelo `creating`: quem usa monta as linhas com `organization_id`.
 - **O `ArchitectureTest` reprova** modelo de domínio sem o trait e, em `app/`, consultas que passam por cima do escopo: `DB::table`, `DB::select` e parentes, `getQuery()`, `toBase()`, `withoutGlobalScope` e `join`. `DB::transaction` e `DB::raw` dentro de consulta Eloquent continuam liberados.
 
+## Atendimentos
+
+A tabela `conversations` guarda atendimentos: um cliente tem vários, cada um com começo e fim. A regra mora em `Conversations/Rules/ConversationCut`, com um teste por exemplo.
+
+- **Só o cliente abre.** Mensagem do cliente (inclusive ligação perdida dele) depois de um dia útil inteiro sem mensagem de pessoa abre um atendimento novo. Vendedora, resposta automática e avisos entram sempre no atendimento mais recente; uma cobrança da vendedora reabre o que estava fechado.
+- **O silêncio conta qualquer pessoa.** Depois de aberto, mensagem do cliente ou da vendedora segura o atendimento. Robô e avisos entram, mas não mexem no relógio; sem nenhuma mensagem de pessoa, o relógio parte do começo.
+- **Dia útil inteiro** é uma data com expediente estritamente entre as duas mensagens, no fuso da empresa (`WorkingCalendar::workingDaysBetween`). Conta a data, não as horas: sábado de 8h às 12h vale um dia.
+- **Fechado** (`status`) quando passou um dia útil inteiro entre a última mensagem de pessoa e a referência, que é a mensagem mais recente da empresa no Owly. A importação fecha os parados no fim (`ConversationStore::closeIdle`).
+- **Começou pela empresa** (`opened_by = company`). A primeira mensagem do histórico abre o primeiro atendimento mesmo quando é da empresa, porque toda mensagem precisa estar num atendimento. Isso não equivale a um atendimento aberto pelo cliente: as contas de "clientes que procuraram" vão separar os dois, e um atendimento da empresa sem mensagem do cliente não gera espera nem resposta.
+- **Responsável** (`seller_id`): a vendedora com mais mensagens no atendimento; no empate, quem respondeu primeiro.
+- **Ao gravar**, por cliente e numa transação só: separa as mensagens novas; se todas são depois do começo do último atendimento, recalcula só a partir dele; se veio mensagem mais antiga, recalcula o histórico inteiro. O atendimento que começa na mesma mensagem fica com o mesmo id; quando dois se juntam, fica o mais antigo e o outro é apagado depois de as mensagens mudarem de lugar. Se algo falha no meio, nada muda.
+- **`ConversationsRecut`** sai depois do commit quando atendimentos que já existiam perderam mensagens ou foram apagados. A IA escuta e leva cada pergunta para o atendimento da mensagem em foco.
+- **Duas importações da mesma empresa** não rodam juntas: o `ProcessImport` tem a trava `WithoutOverlapping` pela empresa.
+- **`owly:recut --empresa=ID [--dry-run]`** refaz todos os atendimentos com o calendário de hoje, um cliente por transação. Rodar de novo sem mudança não muda nada. Mudar o horário ou os feriados não refaz atendimentos fechados sozinho: o comando é rodado de propósito.
+
+Para levar uma base que ainda tem uma conversa por cliente (antes da migração `2026_10_06_000002`):
+
+1. `php artisan owly:integrity --empresa=ID --snapshot`
+2. `php artisan migrate`
+3. `php artisan owly:recut --empresa=ID --dry-run` e depois sem `--dry-run`
+4. `php artisan owly:integrity --empresa=ID --compare`
+
+Até o passo 3, um atendimento por cliente é um estado válido, só mais grosso; uma importação nova já corta os clientes que vierem nela.
+
 ## Mensagens
 
 O id de uma mensagem é a âncora de tudo o que vem depois (oportunidades, achados, perguntas à IA). Por isso:
 
 - **Nada apaga e reinsere mensagem.** Nenhuma função futura ("reprocessar importação", "limpar e importar de novo") pode fazer isso. Reimportar só acrescenta o que é novo.
 - **Apagar uma conversa nunca apaga mensagens.** A chave `messages.conversation_id` é obrigatória e não tem cascata: o banco recusa apagar conversa que ainda tem mensagem. Quem refaz conversas move as mensagens antes. Apagar o cliente ou a empresa continua levando tudo, pelas cascatas de `contact_id` e `organization_id`.
-- **`owly:integrity --empresa=ID`** confere isso numa migração: `--snapshot` guarda em `storage/app/private/integrity/` as contagens, o hash das mensagens (`cliente:id externo`, em ordem) e os números do painel; `--compare` confere contra a última foto e sai com erro se o total ou o hash das mensagens mudou, se o total de clientes mudou ou se alguma mensagem está com cliente ou empresa diferente da sua conversa. O painel aparece lado a lado, sem reprovar, porque uma migração pode mudá-lo de propósito. Só números e hashes saem do comando.
+- **`owly:integrity --empresa=ID`** confere isso numa migração: `--snapshot` guarda em `storage/app/private/integrity/` as contagens, o hash das mensagens (`cliente:id externo`, em ordem), o atendimento mais antigo de cada cliente e os números do painel; `--compare` confere contra a última foto. Sai com erro se o total ou o hash das mensagens mudou, se o total de clientes mudou, se o atendimento mais antigo de um cliente trocou de id, ou se aparece: mensagem com cliente ou empresa diferente do seu atendimento, atendimento vazio ou com totais errados, atendimentos do mesmo cliente que se sobrepõem, atendimento aberto pela empresa fora do começo do histórico, cliente cujo corte mudaria com um `owly:recut`, ou pergunta à IA fora do atendimento da sua mensagem. O painel aparece lado a lado, sem reprovar, porque uma migração pode mudá-lo de propósito. Só números, ids e hashes saem do comando.

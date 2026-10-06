@@ -2,6 +2,7 @@
 
 namespace App\Domains\Conversations;
 
+use App\Domains\Conversations\Console\Recut;
 use App\Domains\Conversations\Contracts\ConversationFacts;
 use App\Domains\Conversations\Contracts\ConversationIntegrity;
 use App\Domains\Conversations\Contracts\ConversationPanels;
@@ -23,5 +24,12 @@ class ConversationsServiceProvider extends ServiceProvider
         $this->app->singleton(ConversationPanels::class, PanelRegistry::class);
         $this->app->bind(ConversationFacts::class, EloquentConversationFacts::class);
         $this->app->bind(ConversationIntegrity::class, EloquentConversationIntegrity::class);
+    }
+
+    public function boot(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([Recut::class]);
+        }
     }
 }

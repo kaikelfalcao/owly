@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Platform\Audit\AuditEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia;
@@ -56,12 +57,14 @@ class ImportTest extends TestCase
         $import = Import::sole();
         $this->assertSame(Import::DONE, $import->status);
         $this->assertSame($user->organization_id, $import->organization_id);
-        $this->assertSame(2, $import->stats['conversations_new']);
+        $this->assertSame(2, $import->stats['contacts_new']);
+        // O Cliente Teste voltou depois de dois dias úteis: dois atendimentos.
+        $this->assertSame(3, $import->stats['conversations_new']);
         $this->assertSame(9, $import->stats['messages_new']);
         $this->assertSame('2026-09-01T12:00:00+00:00', $import->stats['first_at']);
         $this->assertSame([], $import->stats['gaps']);
 
-        $this->assertSame(2, Conversation::where('organization_id', $user->organization_id)->count());
+        $this->assertSame(3, Conversation::where('organization_id', $user->organization_id)->count());
         $this->assertSame(['Ana', 'Bia'], Seller::orderBy('name')->pluck('name')->all());
         $this->assertSame(9, Message::count());
 
@@ -71,7 +74,7 @@ class ImportTest extends TestCase
 
         $notice = $user->notifications()->sole();
         $this->assertSame('Importação concluída', $notice->data['title']);
-        $this->assertSame('2 conversas novas, 9 mensagens novas.', $notice->data['body']);
+        $this->assertSame('2 clientes novos, 3 atendimentos novos, 9 mensagens novas.', $notice->data['body']);
 
         $this->assertSame(['imports.finished', 'imports.started'], AuditEntry::where('action', 'like', 'imports.%')->orderByDesc('id')->pluck('action')->all());
     }
@@ -95,6 +98,44 @@ class ImportTest extends TestCase
         // Cada mensagem fica com a importação que a trouxe primeiro.
         $this->assertSame(9, Message::where('import_id', $first->id)->count());
         $this->assertSame(1, Message::where('import_id', $second->id)->count());
+    }
+
+    public function test_importar_numa_empresa_vazia_da_o_mesmo_corte_do_recorte(): void
+    {
+        // A: importa com o corte. B: importa, junta tudo como logo depois da
+        // migração e roda o owly:recut. Os atendimentos têm de ser os mesmos.
+        [$a, $b] = [User::factory()->create(), User::factory()->create()];
+
+        foreach ([$a, $b] as $user) {
+            $this->actingAs($user)->post('/importar', ['file' => $this->upload(WhatsAppZip::sample())])->assertSessionHasNoErrors();
+        }
+
+        $this->inOrganization($b->organization_id, function (): void {
+            foreach (Conversation::orderBy('first_message_at')->get()->groupBy('contact_id') as $conversations) {
+                $first = $conversations->first();
+                Message::where('contact_id', $first->contact_id)->update(['conversation_id' => $first->id]);
+                Conversation::whereIn('id', $conversations->slice(1)->pluck('id'))->delete();
+                $first->update(['messages_count' => $conversations->sum('messages_count'), 'last_message_at' => $conversations->max('last_message_at'), 'status' => Conversation::OPEN]);
+            }
+        });
+
+        $this->artisan('owly:recut', ['--empresa' => $b->organization_id])->assertSuccessful();
+
+        $episodes = fn (User $user) => $this->inOrganization($user->organization_id, fn () => Conversation::orderBy('first_message_at')->get()
+            ->map(fn (Conversation $c) => [$c->opened_by, $c->status, $c->messages_count, $c->first_message_at->toIso8601String(), $c->last_message_at->toIso8601String()])
+            ->all());
+
+        $this->assertCount(3, $episodes($a));
+        $this->assertSame($episodes($a), $episodes($b));
+    }
+
+    public function test_duas_importacoes_da_mesma_empresa_nao_rodam_juntas(): void
+    {
+        $job = new ProcessImport(7, 1, 'America/Sao_Paulo');
+        $lock = collect($job->middleware())->first(fn ($middleware) => $middleware instanceof WithoutOverlapping);
+
+        $this->assertNotNull($lock);
+        $this->assertSame('import:organization:7', $lock->key);
     }
 
     public function test_o_mesmo_arquivo_duas_vezes_e_recusado(): void
@@ -122,7 +163,7 @@ class ImportTest extends TestCase
 
         $this->acrossOrganizations(function (): void {
             $this->assertSame(2, Import::where('status', Import::DONE)->count());
-            $this->assertSame(4, Conversation::count());
+            $this->assertSame(6, Conversation::count());
         });
     }
 

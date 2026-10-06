@@ -2,6 +2,10 @@
 
 O que a Owly lê nas conversas e mostra ao dono. Cada número abre a lista das conversas que o formam (`/dashboard/{leitura}`). As regras ficam em `app/Domains/Insights/Rules`, uma por classe, com teste em `tests/Unit/Insights`.
 
+## Por atendimento
+
+As leituras contam atendimentos (docs/arquitetura.md, "Atendimentos"), não clientes: o cliente que voltou depois de um dia útil inteiro aparece de novo, e "sem resposta" ou "pior demora" podem aparecer mais de uma vez para ele. O orçamento ainda é lido dentro do atendimento: a venda fechada num atendimento seguinte só vai contar quando a oportunidade olhar o histórico inteiro do cliente.
+
 ## Período
 
 7 dias, 30 dias (padrão) ou tudo. O "hoje" é a mensagem mais recente da empresa, não a data do computador: quem só tem zip olha para os dias do zip (`Period`).

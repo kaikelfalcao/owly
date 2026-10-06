@@ -4,6 +4,7 @@ namespace App\Domains\Imports\Jobs;
 
 use App\Domains\Accounts\CurrentOrganization;
 use App\Domains\Accounts\Jobs\ForOrganization;
+use App\Domains\Conversations\Contracts\ConversationFacts;
 use App\Domains\Conversations\Contracts\ConversationStore;
 use App\Domains\Imports\Contracts\Importer;
 use App\Domains\Imports\Data\ImportFailed;
@@ -15,6 +16,7 @@ use App\Platform\Notifications\Notice;
 use App\Platform\Telemetry\Telemetry;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -29,7 +31,10 @@ class ProcessImport implements ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 3;
+    /** Esperar outra importação da mesma empresa não conta como falha: só as exceções contam. */
+    public int $tries = 20;
+
+    public int $maxExceptions = 3;
 
     /** @var list<int> */
     public array $backoff = [10, 60];
@@ -43,10 +48,15 @@ class ProcessImport implements ShouldQueue
      */
     public function middleware(): array
     {
-        return [new ForOrganization($this->organizationId)];
+        return [
+            new ForOrganization($this->organizationId),
+            // Duas importações da mesma empresa ao mesmo tempo cortariam os
+            // mesmos clientes em paralelo: a segunda espera a primeira.
+            (new WithoutOverlapping("import:organization:{$this->organizationId}"))->releaseAfter(30)->expireAfter($this->timeout + 60),
+        ];
     }
 
-    public function handle(Importer $importer, ConversationStore $store, Audit $audit, Telemetry $telemetry): void
+    public function handle(Importer $importer, ConversationStore $store, ConversationFacts $facts, Audit $audit, Telemetry $telemetry): void
     {
         $import = Import::findOrFail($this->importId);
         Context::add('organization_id', $import->organization_id);
@@ -60,7 +70,18 @@ class ProcessImport implements ShouldQueue
         try {
             $reading = $importer->read(Storage::disk('local')->path((string) $import->path), $this->timezone);
 
-            $stats = ['files' => $reading->files, 'conversations_new' => 0, 'conversations_updated' => 0, 'messages_new' => 0, 'messages_known' => 0];
+            $stats = [
+                'files' => $reading->files,
+                'contacts_new' => 0,
+                // Atendimentos novos.
+                'conversations_new' => 0,
+                // Clientes que já existiam e receberam mensagem nova.
+                'conversations_updated' => 0,
+                // Atendimentos que já existiam e foram refeitos pelo corte.
+                'conversations_recut' => 0,
+                'messages_new' => 0,
+                'messages_known' => 0,
+            ];
             $days = [];
             $first = null;
             $last = null;
@@ -68,11 +89,14 @@ class ProcessImport implements ShouldQueue
             foreach ($reading->conversations as $conversation) {
                 $result = $store->store($import->organization_id, 'zip', $conversation, $import->id);
 
-                if ($result->created) {
-                    $stats['conversations_new']++;
+                if ($result->contactCreated) {
+                    $stats['contacts_new']++;
                 } elseif ($result->newMessages > 0) {
                     $stats['conversations_updated']++;
                 }
+
+                $stats['conversations_new'] += $result->conversationsCreated;
+                $stats['conversations_recut'] += $result->conversationsChanged;
 
                 $stats['messages_new'] += $result->newMessages;
                 $stats['messages_known'] += $result->knownMessages;
@@ -82,6 +106,12 @@ class ProcessImport implements ShouldQueue
                     $first = $first === null || $message->sentAt < $first ? $message->sentAt : $first;
                     $last = $last === null || $message->sentAt > $last ? $message->sentAt : $last;
                 }
+            }
+
+            // Com a referência nova, atendimentos de clientes que não vieram
+            // no arquivo podem ter passado um dia útil em silêncio.
+            if ($last !== null) {
+                $store->closeIdle($import->organization_id, $facts->latestMessageAt($import->organization_id) ?? $last);
             }
 
             $stats['first_at'] = $first?->toIso8601String();
@@ -98,6 +128,7 @@ class ProcessImport implements ShouldQueue
 
             $audit->record('imports.finished', $import, [
                 'files' => $stats['files'],
+                'contacts_new' => $stats['contacts_new'],
                 'conversations_new' => $stats['conversations_new'],
                 'messages_new' => $stats['messages_new'],
                 'problems' => count($reading->problems),
@@ -142,25 +173,25 @@ class ProcessImport implements ShouldQueue
     }
 
     /**
-     * "12 conversas novas, 340 mensagens." para o sino.
+     * "3 clientes novos, 5 atendimentos novos, 340 mensagens novas." para o sino.
      *
      * @param  array<string, mixed>  $stats
      */
     public static function summary(array $stats): string
     {
-        $conversations = (int) $stats['conversations_new'];
         $messages = (int) $stats['messages_new'];
 
         if ($messages === 0) {
             return 'Nenhuma mensagem nova: tudo já estava na Owly.';
         }
 
+        $count = fn (string $key, string $one, string $many) => sprintf('%d %s', (int) ($stats[$key] ?? 0), (int) ($stats[$key] ?? 0) === 1 ? $one : $many);
+
         return sprintf(
-            '%d %s, %d %s.',
-            $conversations,
-            $conversations === 1 ? 'conversa nova' : 'conversas novas',
-            $messages,
-            $messages === 1 ? 'mensagem nova' : 'mensagens novas',
+            '%s, %s, %s.',
+            $count('contacts_new', 'cliente novo', 'clientes novos'),
+            $count('conversations_new', 'atendimento novo', 'atendimentos novos'),
+            $count('messages_new', 'mensagem nova', 'mensagens novas'),
         );
     }
 

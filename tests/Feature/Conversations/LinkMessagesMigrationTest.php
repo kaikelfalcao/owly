@@ -75,7 +75,7 @@ class LinkMessagesMigrationTest extends TestCase
     private function conversation(Organization $organization, string $key): array
     {
         $contact = DB::table('contacts')->insertGetId(['organization_id' => $organization->id, 'external_key' => $key]);
-        $id = DB::table('conversations')->insertGetId(['organization_id' => $organization->id, 'contact_id' => $contact]);
+        $id = DB::table('conversations')->insertGetId(['organization_id' => $organization->id, 'contact_id' => $contact, 'first_message_at' => '2026-09-01 12:00:00', 'last_message_at' => '2026-09-01 12:00:00']);
 
         return ['id' => $id, 'organization_id' => $organization->id, 'contact_id' => $contact];
     }

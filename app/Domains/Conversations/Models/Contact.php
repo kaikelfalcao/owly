@@ -5,7 +5,7 @@ namespace App\Domains\Conversations\Models;
 use App\Domains\Accounts\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -25,11 +25,13 @@ class Contact extends Model
     use BelongsToOrganization;
 
     /**
-     * @return HasOne<Conversation, $this>
+     * Os atendimentos do cliente, do mais antigo ao mais novo.
+     *
+     * @return HasMany<Conversation, $this>
      */
-    public function conversation(): HasOne
+    public function conversations(): HasMany
     {
-        return $this->hasOne(Conversation::class);
+        return $this->hasMany(Conversation::class)->orderBy('first_message_at')->orderBy('id');
     }
 
     /**

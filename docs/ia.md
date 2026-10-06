@@ -36,5 +36,6 @@ Quem paga o provedor é a empresa, na conta dela no Google. A Owly guarda os tok
 - Contrato `App\Domains\Ai\Contracts\AiProvider` (`models`, `suggest`, `generate`) e o adaptador `Adapters/Gemini`.
 - `ProviderCatalog` lista os provedores do assistente. Provedor novo é um adaptador mais uma linha ali.
 - `Services/ConnectProvider` (testar, conectar, padrão, remover) e `Services/AskAboutConversation` (máscara, prompt, gravação, auditoria).
+- A IA lê um atendimento por vez, não o histórico inteiro do cliente. Quando o corte refaz atendimentos, a pergunta vai junto com a mensagem em foco (`ConversationsRecut`).
 - A conversa chega pelo contrato `ConversationTranscript` de Conversas. O quadro na tela da conversa entra por `ConversationPanels`, sem Conversas saber da IA.
 - Erros do provedor viram códigos (`invalid_key`, `quota`, `unavailable`, `blocked`, `no_models`, `unexpected`) com mensagem em português em `AiFailed`.

@@ -20,6 +20,8 @@ import { index, store } from '@/routes/imports';
 
 type Stats = {
     files: number;
+    /** Ausente nas importações de antes dos atendimentos. */
+    contacts_new?: number;
     conversations_new: number;
     conversations_updated: number;
     messages_new: number;
@@ -207,12 +209,15 @@ function ImportCard({
                 <>
                     <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                         <Stat
-                            label="Conversas novas"
-                            value={number(stats.conversations_new)}
+                            label="Clientes novos"
+                            value={number(
+                                // Antes dos atendimentos, conversa nova era cliente novo.
+                                stats.contacts_new ?? stats.conversations_new,
+                            )}
                         />
                         <Stat
-                            label="Conversas atualizadas"
-                            value={number(stats.conversations_updated)}
+                            label="Atendimentos novos"
+                            value={number(stats.conversations_new)}
                         />
                         <Stat
                             label="Mensagens novas"

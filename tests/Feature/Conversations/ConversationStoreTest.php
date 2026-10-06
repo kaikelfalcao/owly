@@ -26,7 +26,8 @@ class ConversationStoreTest extends TestCase
 
         $result = $this->store($organization->id, ['a', 'b']);
 
-        $this->assertTrue($result->created);
+        $this->assertTrue($result->contactCreated);
+        $this->assertSame(1, $result->conversationsCreated);
         $this->assertSame(2, $result->newMessages);
 
         $conversation = $this->inOrganization($organization, fn () => Conversation::sole());
@@ -42,7 +43,8 @@ class ConversationStoreTest extends TestCase
 
         $result = $this->store($organization->id, ['a', 'b', 'c']);
 
-        $this->assertFalse($result->created);
+        $this->assertFalse($result->contactCreated);
+        $this->assertSame(0, $result->conversationsCreated);
         $this->assertSame(1, $result->newMessages);
         $this->assertSame(2, $result->knownMessages);
         $this->inOrganization($organization, function (): void {
