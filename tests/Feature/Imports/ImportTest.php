@@ -116,8 +116,10 @@ class ImportTest extends TestCase
                 ->assertSessionHasNoErrors();
         }
 
-        $this->assertSame(2, Import::where('status', Import::DONE)->count());
-        $this->assertSame(4, Conversation::count());
+        $this->acrossOrganizations(function (): void {
+            $this->assertSame(2, Import::where('status', Import::DONE)->count());
+            $this->assertSame(4, Conversation::count());
+        });
     }
 
     public function test_arquivo_que_nao_e_zip_e_recusado(): void

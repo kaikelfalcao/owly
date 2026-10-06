@@ -49,7 +49,7 @@ class StartImport
 
         $this->audit->record('imports.started', $import, ['size' => $import->file_size]);
 
-        ProcessImport::dispatch($import->id, $timezone)->afterCommit();
+        ProcessImport::dispatch($organizationId, $import->id, $timezone)->afterCommit();
 
         return $import;
     }
