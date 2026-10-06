@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $last_message_at
  * @property int $messages_count
  * @property-read Contact $contact
+ * @property-read Seller|null $seller
  */
 #[Fillable(['organization_id', 'contact_id', 'seller_id', 'opened_by', 'status', 'first_message_at', 'last_message_at', 'messages_count'])]
 class Conversation extends Model
@@ -48,6 +49,14 @@ class Conversation extends Model
     public function contact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
+    }
+
+    /**
+     * @return BelongsTo<Seller, $this>
+     */
+    public function seller(): BelongsTo
+    {
+        return $this->belongsTo(Seller::class);
     }
 
     /**

@@ -53,6 +53,99 @@ class ConversationTest extends TestCase
                 ->where('conversations.data.2.messagesCount', 3));
     }
 
+    public function test_cada_linha_diz_a_situacao_o_responsavel_e_qual_atendimento_e(): void
+    {
+        $user = $this->withImport();
+
+        $this->actingAs($user)
+            ->get('/conversas')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('conversations.data.0.status', 'open')
+                ->where('conversations.data.0.seller', null)
+                ->where('conversations.data.0.position', 2)
+                ->where('conversations.data.0.episodes', 2)
+                ->where('conversations.data.0.openedBy', 'contact')
+                ->where('conversations.data.1.status', 'closed')
+                ->where('conversations.data.1.seller', 'Bia')
+                ->where('conversations.data.1.position', 1)
+                ->where('conversations.data.1.episodes', 1)
+                ->where('conversations.data.2.status', 'closed')
+                ->where('conversations.data.2.seller', 'Ana')
+                ->where('conversations.data.2.position', 1)
+                ->where('conversations.data.2.episodes', 2));
+    }
+
+    public function test_atendimento_que_comecou_pela_empresa_vem_marcado(): void
+    {
+        Storage::fake('local');
+        $user = User::factory()->create();
+        $zip = (new WhatsAppZip)->sheet('5511955554444.xlsx', [
+            ['2026-09-01', '09:00:00', WhatsAppZip::COMPANY, '', "*Ana:*\nOi! Segue a tabela nova."],
+            ['2026-09-01', '09:30:00', '5511955554444', 'Cliente Inventado', 'Obrigado'],
+        ]);
+
+        $this->actingAs($user)->post('/importar', [
+            'file' => new UploadedFile($zip->path(), 'conversas.zip', 'application/zip', null, true),
+        ])->assertSessionHasNoErrors();
+
+        $conversation = Conversation::firstOrFail();
+
+        $this->get('/conversas')
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('conversations.data.0.openedBy', 'company'));
+
+        $this->get("/conversas/{$conversation->id}")
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('conversation.openedBy', 'company')
+                ->where('conversation.seller', 'Ana')
+                ->where('conversation.position', 1)
+                ->where('conversation.episodes', 1)
+                ->where('conversation.previousId', null)
+                ->where('conversation.nextId', null));
+    }
+
+    public function test_navega_entre_os_atendimentos_do_mesmo_cliente(): void
+    {
+        $user = $this->withImport();
+        [$first, $second] = Conversation::whereHas('contact', fn ($q) => $q->where('phone', '5511988887777'))->orderBy('first_message_at')->get()->all();
+
+        $this->actingAs($user)->get("/conversas/{$first->id}")
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('conversation.position', 1)
+                ->where('conversation.episodes', 2)
+                ->where('conversation.status', 'closed')
+                ->where('conversation.seller', 'Ana')
+                ->where('conversation.previousId', null)
+                ->where('conversation.nextId', $second->id));
+
+        $this->actingAs($user)->get("/conversas/{$second->id}")
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('conversation.position', 2)
+                ->where('conversation.status', 'open')
+                ->where('conversation.previousId', $first->id)
+                ->where('conversation.nextId', null));
+    }
+
+    public function test_volta_para_a_leitura_do_painel_com_o_periodo_e_o_filtro(): void
+    {
+        $user = $this->withImport();
+        $conversation = Conversation::first();
+
+        $this->actingAs($user)->get("/conversas/{$conversation->id}?painel=vendedora&periodo=7&filtro=Ana")
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('origin', ['painel' => 'vendedora', 'periodo' => '7', 'filtro' => 'Ana']));
+
+        $this->actingAs($user)->get("/conversas/{$conversation->id}?busca=maria&page=2")
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('origin', ['busca' => 'maria', 'page' => '2']));
+
+        // O que não tem cara de leitura ou de busca não vai para a trilha.
+        $this->actingAs($user)->get("/conversas/{$conversation->id}?painel=".urlencode('<script>').'&page=0')
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('origin', null));
+
+        $this->actingAs($user)->get("/conversas/{$conversation->id}")
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('origin', null));
+    }
+
     public function test_busca_por_nome_ou_telefone(): void
     {
         $user = $this->withImport();

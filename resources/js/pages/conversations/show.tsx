@@ -1,6 +1,8 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import {
     Bot,
+    ChevronLeft,
+    ChevronRight,
     FileText,
     Image as ImageIcon,
     Mic,
@@ -14,9 +16,15 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import AskAi from '@/components/ask-ai';
 import type { AiPanelProps, FocusedMessage } from '@/components/ask-ai';
+import EpisodeStatus from '@/components/episode-status';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { insightCrumbs } from '@/lib/insights';
+import type { InsightOrigin } from '@/lib/insights';
 import { date, dateTime, dayKey, dayLabel, monthLabel, time } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import { index, show } from '@/routes/conversations';
+import type { BreadcrumbItem } from '@/types';
 
 type Message = {
     id: number;
@@ -41,16 +49,26 @@ type Props = {
         messagesCount: number;
         fromContact: number;
         sellers: { name: string; messages: number }[];
+        status: 'open' | 'closed';
+        openedBy: 'contact' | 'company';
+        seller: string | null;
+        position: number;
+        episodes: number;
+        previousId: number | null;
+        nextId: number | null;
     };
     messages: Message[];
     panels: { ai?: AiPanelProps };
+    /** A lista ou a leitura do painel de onde a pessoa veio. */
+    origin: InsightOrigin | { busca?: string; page?: string } | null;
 };
 
-/** Uma conversa: a ficha do cliente e todas as mensagens, dia a dia. */
+/** Um atendimento: a ficha do cliente e as mensagens dele, dia a dia. */
 export default function ConversationShow({
     conversation,
     messages,
     panels,
+    origin,
 }: Props) {
     const timeZone = usePage().props.auth.organization?.timezone;
     const groups = groupByDay(messages, timeZone);
@@ -81,6 +99,7 @@ export default function ConversationShow({
                                     </p>
                                 )}
                         </div>
+                        <Episode conversation={conversation} origin={origin} />
                         <dl className="grid grid-cols-2 gap-3 text-sm">
                             <Fact label="Mensagens">
                                 {conversation.messagesCount.toLocaleString(
@@ -106,6 +125,14 @@ export default function ConversationShow({
                                 </Fact>
                             )}
                         </dl>
+                        <div className="text-sm">
+                            <p className="text-xs text-muted-foreground">
+                                Responsável
+                            </p>
+                            <p className="truncate">
+                                {conversation.seller ?? 'Ninguém respondeu'}
+                            </p>
+                        </div>
                         {conversation.sellers.length > 0 && (
                             <div className="text-sm">
                                 <p className="mb-1 text-xs text-muted-foreground">
@@ -164,6 +191,75 @@ export default function ConversationShow({
                 </section>
             </div>
         </>
+    );
+}
+
+/** "Atendimento 2 de 3", a situação e o caminho para o anterior e o seguinte. */
+function Episode({
+    conversation,
+    origin,
+}: Pick<Props, 'conversation' | 'origin'>) {
+    const query = origin ?? {};
+    const step = (id: number | null, label: string, next: boolean) => {
+        const Icon = next ? ChevronRight : ChevronLeft;
+
+        return id ? (
+            <Button variant="outline" size="icon" className="size-7" asChild>
+                <Link
+                    href={show(id, { query })}
+                    aria-label={label}
+                    title={label}
+                >
+                    <Icon />
+                </Link>
+            </Button>
+        ) : (
+            <Button
+                variant="outline"
+                size="icon"
+                className="size-7"
+                disabled
+                aria-label={label}
+            >
+                <Icon />
+            </Button>
+        );
+    };
+
+    return (
+        <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">
+                    Atendimento {conversation.position} de{' '}
+                    {conversation.episodes}
+                </p>
+                {conversation.episodes > 1 && (
+                    <div className="flex gap-1">
+                        {step(
+                            conversation.previousId,
+                            'Atendimento anterior',
+                            false,
+                        )}
+                        {step(
+                            conversation.nextId,
+                            'Atendimento seguinte',
+                            true,
+                        )}
+                    </div>
+                )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+                <EpisodeStatus status={conversation.status} />
+                {conversation.openedBy === 'company' && (
+                    <Badge
+                        variant="outline"
+                        title="A primeira mensagem do histórico foi da empresa, não do cliente."
+                    >
+                        Começou pela empresa
+                    </Badge>
+                )}
+            </div>
+        </div>
     );
 }
 
@@ -336,12 +432,20 @@ function groupByDay(messages: Message[], timeZone?: string): DayGroup[] {
     return groups;
 }
 
-ConversationShow.layout = (props: Props) => ({
-    breadcrumbs: [
-        { title: 'Conversas', href: index() },
-        {
-            title: props.conversation.contact,
-            href: show(props.conversation.id),
-        },
-    ],
-});
+ConversationShow.layout = (props: Props) => {
+    const origin = props.origin ?? {};
+    const from: BreadcrumbItem[] =
+        'painel' in origin
+            ? insightCrumbs(origin)
+            : [{ title: 'Conversas', href: index({ query: origin }) }];
+
+    return {
+        breadcrumbs: [
+            ...from,
+            {
+                title: props.conversation.contact,
+                href: show(props.conversation.id, { query: origin }),
+            },
+        ],
+    };
+};
