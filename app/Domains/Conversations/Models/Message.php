@@ -11,6 +11,8 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $organization_id
  * @property int $conversation_id
+ * @property int $contact_id
+ * @property int|null $import_id
  * @property string $source
  * @property string $external_id
  * @property Carbon $sent_at

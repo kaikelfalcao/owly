@@ -17,9 +17,9 @@ class EloquentConversationStore implements ConversationStore
 {
     public function __construct(private readonly CurrentOrganization $organization) {}
 
-    public function store(int $organizationId, string $source, IncomingConversation $incoming): StoreResult
+    public function store(int $organizationId, string $source, IncomingConversation $incoming, ?int $importId = null): StoreResult
     {
-        return $this->organization->ensure($organizationId, fn () => DB::transaction(function () use ($organizationId, $source, $incoming) {
+        return $this->organization->ensure($organizationId, fn () => DB::transaction(function () use ($organizationId, $source, $incoming, $importId) {
             $contact = Contact::firstOrCreate(
                 ['organization_id' => $organizationId, 'external_key' => $incoming->contactKey],
                 ['phone' => $incoming->contactPhone, 'name' => $incoming->contactName],
@@ -34,7 +34,9 @@ class EloquentConversationStore implements ConversationStore
                 ['organization_id' => $organizationId, 'contact_id' => $contact->id],
             );
 
-            $known = Message::where('conversation_id', $conversation->id)
+            // A mensagem é do cliente, não da conversa: quando a conversa for
+            // refeita, a mesma mensagem continua reconhecida.
+            $known = Message::where('contact_id', $contact->id)
                 ->pluck('external_id')
                 ->flip();
 
@@ -51,6 +53,8 @@ class EloquentConversationStore implements ConversationStore
                 $rows[] = [
                     'organization_id' => $organizationId,
                     'conversation_id' => $conversation->id,
+                    'contact_id' => $contact->id,
+                    'import_id' => $importId,
                     'source' => $source,
                     'external_id' => $message->externalId,
                     'sent_at' => $message->sentAt->utc(),

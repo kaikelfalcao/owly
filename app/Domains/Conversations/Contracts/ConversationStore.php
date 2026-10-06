@@ -13,9 +13,11 @@ interface ConversationStore
 {
     /**
      * Grava o cliente, a conversa e as mensagens novas. Mensagem que já
-     * existe (mesmo id externo na conversa) é ignorada.
+     * existe (mesmo id externo do mesmo cliente) é ignorada e fica com a
+     * importação que a trouxe primeiro.
      *
      * @param  string  $source  zip | api
+     * @param  int|null  $importId  a importação que trouxe as mensagens; null quando não veio de uma
      */
-    public function store(int $organizationId, string $source, IncomingConversation $incoming): StoreResult;
+    public function store(int $organizationId, string $source, IncomingConversation $incoming, ?int $importId = null): StoreResult;
 }

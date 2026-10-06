@@ -16,10 +16,11 @@ Monólito Laravel com domínios separados. O objetivo é não repetir o que acon
 As pastas nascem quando o primeiro código do domínio entra. Já existem:
 
 - `app/Platform`: telemetria, logs, auditoria (`docs/observabilidade.md`) e notificações do sino (`Notice`).
-- `app/Domains/Conversations`: clientes, vendedoras, conversas e mensagens. Quem grava usa o contrato `ConversationStore`, que recebe `IncomingConversation` sem saber de onde veio e ignora mensagem que já existe (`external_id` por conversa). As telas leem por `ConversationQueries`.
+- `app/Domains/Conversations`: clientes, vendedoras, conversas e mensagens. Quem grava usa o contrato `ConversationStore`, que recebe `IncomingConversation` sem saber de onde veio e ignora mensagem que já existe (`external_id` por cliente). Cada mensagem guarda o cliente (`contact_id`) e a importação que a trouxe primeiro (`import_id`), sem depender da conversa. As telas leem por `ConversationQueries`.
 - `app/Domains/Imports`: a tabela `imports`, o serviço `StartImport` (guarda o zip, recusa arquivo repetido e manda para a fila), o job `ProcessImport` (lê pelo `Importer`, grava pelo `ConversationStore`, apaga o zip, audita e avisa no sino) e a regra `DateGaps`. O formato ligado vem de `owly.imports.format`.
 - `app/Domains/Ai`: conexões com provedores (`AiConnection`), o contrato `AiProvider` com o adaptador `Gemini`, a máscara (`Redactor`) e as perguntas sobre conversas (`docs/ia.md`). Lê a conversa pelo contrato `ConversationTranscript` e aparece na tela da conversa por `ConversationPanels`, o espaço que Conversas abre para outros domínios.
 - `app/Domains/Insights`: as leituras do painel (`docs/painel.md`). Uma regra por classe em `Rules` (`BusinessHours`, `Holidays`, `ClientTurns`, `ClosingMessage`, `QuoteMessage`, `SaleSignal`, `Topics`); o serviço `Insights` passa uma vez pelas conversas e o `Dashboard` monta o painel e as listas. Lê as conversas pelo contrato `ConversationFacts`, a última importação por `ImportHealth` e o horário da empresa por `CurrentOrganization::calendar()`.
+- `app/Console`: comandos de operação que juntam domínios. Hoje só o `owly:integrity`, que tira a foto dos dados de uma empresa antes de uma migração e confere depois (veja "Mensagens" abaixo). Usa os contratos de Conversas e o `Dashboard` de Leitura, como a tela faz.
 - `app/Domains/Accounts`: a empresa (`Organization`, com o horário de atendimento e os feriados), o comando `owly:owner` e `CurrentOrganization`, que os outros domínios usam para saber de qual empresa é a requisição e, por `calendar()`, o horário dela. O `User` continua em `app/Models`, onde o Laravel e o Fortify esperam.
 
 ## Regras de fronteira
@@ -49,3 +50,11 @@ O filtro não depende de ninguém lembrar dele:
 - **Ver todas as empresas** só com `across($motivo, fn)`, e só em comandos (`Console/`) ou na futura administração (`app/Platform/Admin`). O motivo vai para o log.
 - **`Model::insert()` em lote** não passa pelo `creating`: quem usa monta as linhas com `organization_id`.
 - **O `ArchitectureTest` reprova** modelo de domínio sem o trait e, em `app/`, consultas que passam por cima do escopo: `DB::table`, `DB::select` e parentes, `getQuery()`, `toBase()`, `withoutGlobalScope` e `join`. `DB::transaction` e `DB::raw` dentro de consulta Eloquent continuam liberados.
+
+## Mensagens
+
+O id de uma mensagem é a âncora de tudo o que vem depois (oportunidades, achados, perguntas à IA). Por isso:
+
+- **Nada apaga e reinsere mensagem.** Nenhuma função futura ("reprocessar importação", "limpar e importar de novo") pode fazer isso. Reimportar só acrescenta o que é novo.
+- **Apagar uma conversa nunca apaga mensagens.** A chave `messages.conversation_id` é obrigatória e não tem cascata: o banco recusa apagar conversa que ainda tem mensagem. Quem refaz conversas move as mensagens antes. Apagar o cliente ou a empresa continua levando tudo, pelas cascatas de `contact_id` e `organization_id`.
+- **`owly:integrity --empresa=ID`** confere isso numa migração: `--snapshot` guarda em `storage/app/private/integrity/` as contagens, o hash das mensagens (`cliente:id externo`, em ordem) e os números do painel; `--compare` confere contra a última foto e sai com erro se o total ou o hash das mensagens mudou, se o total de clientes mudou ou se alguma mensagem está com cliente ou empresa diferente da sua conversa. O painel aparece lado a lado, sem reprovar, porque uma migração pode mudá-lo de propósito. Só números e hashes saem do comando.

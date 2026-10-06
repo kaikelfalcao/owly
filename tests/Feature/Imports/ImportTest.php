@@ -86,11 +86,15 @@ class ImportTest extends TestCase
         ]);
         $this->actingAs($user)->post('/importar', ['file' => $this->upload($bigger)])->assertSessionHasNoErrors();
 
-        $second = Import::latest('id')->first();
+        [$first, $second] = Import::orderBy('id')->get()->all();
         $this->assertSame(1, $second->stats['conversations_new']);
         $this->assertSame(1, $second->stats['messages_new']);
         $this->assertSame(9, $second->stats['messages_known']);
         $this->assertSame(10, Message::count());
+
+        // Cada mensagem fica com a importação que a trouxe primeiro.
+        $this->assertSame(9, Message::where('import_id', $first->id)->count());
+        $this->assertSame(1, Message::where('import_id', $second->id)->count());
     }
 
     public function test_o_mesmo_arquivo_duas_vezes_e_recusado(): void
