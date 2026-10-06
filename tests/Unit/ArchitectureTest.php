@@ -114,6 +114,28 @@ class ArchitectureTest extends TestCase
         $this->assertSame([], $violations);
     }
 
+    public function test_dia_util_e_hora_util_so_no_calendario_da_empresa(): void
+    {
+        // Um calendário só (docs/arquitetura.md): os outros domínios perguntam
+        // ao WorkingCalendar e não fazem a própria conta de feriado ou expediente.
+        $root = $this->root().'/app';
+        $violations = [];
+
+        foreach ($this->files($root) as $path) {
+            $relative = substr($path, strlen($root) + 1);
+
+            if (str_starts_with($relative, 'Domains/Accounts/')) {
+                continue;
+            }
+
+            if (preg_match('/class \w*(Holiday|BusinessHours|WorkingDay|Calendar)\w*|Holidays::|new BusinessHours\(|dayOfWeekIso/', (string) file_get_contents($path))) {
+                $violations[] = $relative;
+            }
+        }
+
+        $this->assertSame([], $violations);
+    }
+
     private function root(): string
     {
         return dirname(__DIR__, 2);

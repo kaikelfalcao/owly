@@ -1,8 +1,8 @@
 <?php
 
-namespace Tests\Unit\Insights;
+namespace Tests\Unit\Accounts;
 
-use App\Domains\Insights\Rules\BusinessHours;
+use App\Domains\Accounts\Rules\BusinessHours;
 use Carbon\CarbonImmutable;
 use PHPUnit\Framework\TestCase;
 
@@ -67,6 +67,37 @@ class BusinessHoursTest extends TestCase
 
         $this->assertTrue($hours->isOpen($this->at('2026-09-13 03:00')));
         $this->assertSame(86400, $hours->secondsBetween($this->at('2026-09-12 10:00'), $this->at('2026-09-13 10:00')));
+    }
+
+    public function test_dias_uteis_entre_contam_so_as_datas_do_meio(): void
+    {
+        $hours = $this->weekdays();
+
+        // Segunda e terça seguidas: nenhuma data no meio, por mais horas que passem.
+        $this->assertSame(0, $hours->workingDaysBetween($this->at('2026-09-14 08:00'), $this->at('2026-09-15 17:59')));
+        // Terça 18h e quinta 8h: quarta inteira no meio.
+        $this->assertSame(1, $hours->workingDaysBetween($this->at('2026-09-15 18:00'), $this->at('2026-09-17 08:00')));
+        // Sexta e segunda: sábado e domingo fechados.
+        $this->assertSame(0, $hours->workingDaysBetween($this->at('2026-09-11 17:00'), $this->at('2026-09-14 08:00')));
+        // De trás para frente não conta nada.
+        $this->assertSame(0, $hours->workingDaysBetween($this->at('2026-09-17 08:00'), $this->at('2026-09-14 08:00')));
+    }
+
+    public function test_dias_uteis_pulam_feriados_e_param_no_limite(): void
+    {
+        // 07/09/2026 é feriado nacional (segunda); 08/09 cadastrado pela empresa.
+        $hours = new BusinessHours($this->week(), self::TZ, ['2026-09-08']);
+
+        $this->assertSame(0, $hours->workingDaysBetween($this->at('2026-09-04 10:00'), $this->at('2026-09-09 10:00')));
+        $this->assertFalse($hours->isWorkingDay($this->at('2026-09-07 10:00')));
+        $this->assertSame(1, $hours->workingDaysBetween($this->at('2026-09-01 10:00'), $this->at('2026-12-01 10:00'), limit: 1));
+    }
+
+    public function test_sem_nenhum_dia_aberto_toda_data_e_util(): void
+    {
+        $hours = new BusinessHours(array_fill_keys(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'], null), self::TZ);
+
+        $this->assertSame(2, $hours->workingDaysBetween($this->at('2026-09-11 10:00'), $this->at('2026-09-14 10:00')));
     }
 
     private function weekdays(): BusinessHours

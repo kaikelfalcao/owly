@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Domains\Accounts\CurrentOrganization;
 use App\Domains\Accounts\Models\Organization;
+use App\Domains\Ai\Services\QuestionIntegrity;
 use App\Domains\Conversations\Contracts\ConversationIntegrity;
 use App\Domains\Insights\Data\Period;
 use App\Domains\Insights\Services\Dashboard;
@@ -12,8 +13,9 @@ use Illuminate\Support\Facades\Storage;
 
 /**
  * Foto dos dados de uma empresa antes de uma migração e conferência depois.
- * Junta Conversas (contagens, hash das mensagens, problemas) e o painel, por
- * isso mora fora dos domínios. Só imprime e guarda números e hashes.
+ * Junta Conversas (contagens, hash das mensagens, problemas), as perguntas à
+ * IA e o painel, por isso mora fora dos domínios. Só imprime e guarda
+ * números, ids e hashes.
  */
 class CheckIntegrity extends Command
 {
@@ -37,7 +39,7 @@ class CheckIntegrity extends Command
         'sales' => 'Vendas prováveis',
     ];
 
-    public function handle(CurrentOrganization $current, ConversationIntegrity $integrity, Dashboard $dashboard): int
+    public function handle(CurrentOrganization $current, ConversationIntegrity $integrity, QuestionIntegrity $questions, Dashboard $dashboard): int
     {
         $organizationId = (int) $this->option('empresa');
 
@@ -53,12 +55,12 @@ class CheckIntegrity extends Command
             return self::INVALID;
         }
 
-        return $current->runAs($organizationId, function () use ($current, $integrity, $dashboard, $organizationId): int {
+        return $current->runAs($organizationId, function () use ($current, $integrity, $questions, $dashboard, $organizationId): int {
             $now = [
                 'facts' => $integrity->facts($organizationId)->toArray(),
                 'panel' => $this->panel($current, $dashboard),
             ];
-            $problems = $integrity->problems($organizationId);
+            $problems = [...$integrity->problems($organizationId), ...$questions->problems($organizationId)];
 
             return $this->option('snapshot')
                 ? $this->snapshot($organizationId, $now, $problems)
@@ -67,7 +69,7 @@ class CheckIntegrity extends Command
     }
 
     /**
-     * @param  array{facts: array<string, int|string>, panel: array<string, array<string, int|null>>}  $now
+     * @param  array{facts: array<string, mixed>, panel: array<string, array<string, int|null>>}  $now
      * @param  list<string>  $problems
      */
     private function snapshot(int $organizationId, array $now, array $problems): int
@@ -90,7 +92,7 @@ class CheckIntegrity extends Command
     }
 
     /**
-     * @param  array{facts: array<string, int|string>, panel: array<string, array<string, int|null>>}  $now
+     * @param  array{facts: array<string, mixed>, panel: array<string, array<string, int|null>>}  $now
      * @param  list<string>  $problems
      */
     private function compare(int $organizationId, array $now, array $problems): int
@@ -123,6 +125,14 @@ class CheckIntegrity extends Command
             if ($before['facts'][$field] !== $now['facts'][$field]) {
                 $problems[] = $message;
             }
+        }
+
+        // O atendimento mais antigo de cada cliente fica com o id da conversa
+        // de antes (fotos antigas não guardavam isso).
+        $lost = array_keys(array_diff_assoc($before['facts']['first_conversations'] ?? [], $now['facts']['first_conversations']));
+
+        if ($lost !== []) {
+            $problems[] = sprintf('Clientes cujo atendimento mais antigo não ficou com o id de antes: %d (cliente #%s)', count($lost), implode(', #', array_slice($lost, 0, 5)));
         }
 
         if ($problems !== []) {
@@ -164,7 +174,7 @@ class CheckIntegrity extends Command
     }
 
     /**
-     * @param  array<string, int|string>  ...$columns
+     * @param  array<string, mixed>  ...$columns
      * @return list<list<int|string>>
      */
     private function rows(array ...$columns): array
@@ -174,6 +184,7 @@ class CheckIntegrity extends Command
             'contacts' => 'Clientes',
             'conversations' => 'Conversas',
             'empty_conversations' => 'Conversas sem mensagem',
+            'opened_by_company' => 'Começaram pela empresa',
             'messages_hash' => 'Hash das mensagens',
         ];
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domains\Insights\Rules;
+namespace App\Domains\Accounts\Rules;
 
 use Carbon\CarbonImmutable;
 

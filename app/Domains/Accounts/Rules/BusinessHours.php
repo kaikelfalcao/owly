@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domains\Insights\Rules;
+namespace App\Domains\Accounts\Rules;
 
 use Carbon\CarbonImmutable;
 
@@ -90,6 +90,35 @@ final class BusinessHours
         }
 
         return $seconds;
+    }
+
+    /** Se a data (no fuso da empresa) tem expediente. Sem nenhum dia aberto, todas têm. */
+    public function isWorkingDay(CarbonImmutable $at): bool
+    {
+        return ! $this->hasAnyDay() || $this->window($at->setTimezone($this->timezone)->startOfDay()) !== null;
+    }
+
+    /**
+     * Datas com expediente estritamente entre as de dois instantes, no fuso da
+     * empresa. Conta a data, não as horas: um sábado de 8h às 12h vale um dia.
+     * Para em $limit, porque quem pergunta "passou um dia útil?" não precisa
+     * contar meses.
+     */
+    public function workingDaysBetween(CarbonImmutable $from, CarbonImmutable $to, int $limit = PHP_INT_MAX): int
+    {
+        $day = $from->setTimezone($this->timezone)->startOfDay()->addDay();
+        $last = $to->setTimezone($this->timezone)->startOfDay();
+        $days = 0;
+
+        while ($day < $last && $days < $limit) {
+            if ($this->isWorkingDay($day)) {
+                $days++;
+            }
+
+            $day = $day->addDay();
+        }
+
+        return $days;
     }
 
     /**

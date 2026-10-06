@@ -11,6 +11,7 @@ final readonly class MessageFact
 {
     /**
      * @param  string  $author  contact | seller | bot | system
+     * @param  string|null  $seller  o nome, para mostrar; para agrupar, use $sellerId
      */
     public function __construct(
         public int $id,
@@ -21,5 +22,7 @@ final readonly class MessageFact
         public ?string $body = null,
         public ?string $mediaType = null,
         public ?string $event = null,
+        public int $conversationId = 0,
+        public ?int $sellerId = null,
     ) {}
 }

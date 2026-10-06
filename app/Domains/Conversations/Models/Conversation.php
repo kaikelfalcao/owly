@@ -10,20 +10,29 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * O histórico de mensagens com um cliente, venha do zip ou da API.
+ * Um atendimento: um trecho do histórico com um cliente, com começo e fim
+ * (docs/arquitetura.md, "Atendimentos"). O corte decide quais mensagens
+ * estão nele; venham do zip ou da API.
  *
  * @property int $id
  * @property int $organization_id
  * @property int $contact_id
- * @property Carbon|null $first_message_at
- * @property Carbon|null $last_message_at
+ * @property int|null $seller_id responsável: a vendedora com mais mensagens
+ * @property string $opened_by contact | company
+ * @property string $status open | closed
+ * @property Carbon $first_message_at
+ * @property Carbon $last_message_at
  * @property int $messages_count
  * @property-read Contact $contact
  */
-#[Fillable(['organization_id', 'contact_id', 'first_message_at', 'last_message_at', 'messages_count'])]
+#[Fillable(['organization_id', 'contact_id', 'seller_id', 'opened_by', 'status', 'first_message_at', 'last_message_at', 'messages_count'])]
 class Conversation extends Model
 {
     use BelongsToOrganization;
+
+    public const OPEN = 'open';
+
+    public const CLOSED = 'closed';
 
     protected function casts(): array
     {

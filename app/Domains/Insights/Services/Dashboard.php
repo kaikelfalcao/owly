@@ -6,7 +6,6 @@ use App\Domains\Accounts\Data\WorkingCalendar;
 use App\Domains\Conversations\Contracts\ConversationFacts;
 use App\Domains\Imports\Contracts\ImportHealth;
 use App\Domains\Insights\Data\Period;
-use App\Domains\Insights\Rules\BusinessHours;
 use App\Domains\Insights\Rules\Median;
 use App\Domains\Insights\Rules\Topics;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -154,9 +153,7 @@ class Dashboard
     private function read(WorkingCalendar $calendar, ?string $periodKey): array
     {
         $period = Period::make($periodKey, $this->facts->latestMessageAt($calendar->organizationId), $calendar->timezone);
-        $hours = new BusinessHours($calendar->hours, $calendar->timezone, $calendar->holidays, $calendar->nationalHolidays);
-
-        $insights = (new Insights($period, $hours, $this->topics(), (int) config('owly.insights.stalled_quote_days', 2)))
+        $insights = (new Insights($period, $calendar, $this->topics(), (int) config('owly.insights.stalled_quote_days', 2)))
             ->read($this->facts->timelines($calendar->organizationId, $period->since));
 
         return [$period, $insights];

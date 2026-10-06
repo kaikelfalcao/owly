@@ -7,15 +7,21 @@ use App\Domains\Conversations\Contracts\ConversationStore;
 use App\Domains\Conversations\Data\IncomingConversation;
 use App\Domains\Conversations\Data\IncomingMessage;
 use App\Domains\Conversations\Data\StoreResult;
+use App\Domains\Conversations\Events\ConversationsRecut;
 use App\Domains\Conversations\Models\Contact;
 use App\Domains\Conversations\Models\Conversation;
 use App\Domains\Conversations\Models\Message;
 use App\Domains\Conversations\Models\Seller;
+use App\Domains\Conversations\Rules\ConversationCut;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 class EloquentConversationStore implements ConversationStore
 {
-    public function __construct(private readonly CurrentOrganization $organization) {}
+    public function __construct(
+        private readonly CurrentOrganization $organization,
+        private readonly ConversationCutter $cutter,
+    ) {}
 
     public function store(int $organizationId, string $source, IncomingConversation $incoming, ?int $importId = null): StoreResult
     {
@@ -30,12 +36,8 @@ class EloquentConversationStore implements ConversationStore
                 $contact->update(['name' => $incoming->contactName]);
             }
 
-            $conversation = Conversation::firstOrCreate(
-                ['organization_id' => $organizationId, 'contact_id' => $contact->id],
-            );
-
-            // A mensagem é do cliente, não da conversa: quando a conversa for
-            // refeita, a mesma mensagem continua reconhecida.
+            // A mensagem é do cliente, não do atendimento: quando o corte
+            // refaz os atendimentos, a mesma mensagem continua reconhecida.
             $known = Message::where('contact_id', $contact->id)
                 ->pluck('external_id')
                 ->flip();
@@ -52,7 +54,6 @@ class EloquentConversationStore implements ConversationStore
                 $known[$message->externalId] = true;
                 $rows[] = [
                     'organization_id' => $organizationId,
-                    'conversation_id' => $conversation->id,
                     'contact_id' => $contact->id,
                     'import_id' => $importId,
                     'source' => $source,
@@ -71,19 +72,74 @@ class EloquentConversationStore implements ConversationStore
                 ];
             }
 
-            foreach (array_chunk($rows, 500) as $chunk) {
-                Message::insert($chunk);
+            $plan = $this->cutter->plan($contact, $rows, $this->reference($rows));
+            $outcome = $this->cutter->apply($plan);
+
+            if ($outcome->changed !== []) {
+                ConversationsRecut::dispatch($organizationId, [$contact->id], $outcome->changed, $outcome->replaced);
             }
 
-            $this->refreshTotals($conversation);
-
             return new StoreResult(
-                conversationId: $conversation->id,
-                created: $conversation->wasRecentlyCreated,
+                contactId: $contact->id,
+                contactCreated: $contact->wasRecentlyCreated,
                 newMessages: count($rows),
                 knownMessages: count($incoming->messages) - count($rows),
+                conversationsCreated: $outcome->created,
+                conversationsChanged: count($outcome->changed),
             );
         }));
+    }
+
+    public function closeIdle(int $organizationId, CarbonImmutable $reference): int
+    {
+        return $this->organization->ensure($organizationId, function () use ($reference): int {
+            $cut = new ConversationCut($this->organization->calendar());
+            $open = Conversation::where('status', Conversation::OPEN)->pluck('first_message_at', 'id');
+            $closed = [];
+
+            foreach ($open->keys()->chunk(500) as $chunk) {
+                $lastPerson = Message::whereIn('conversation_id', $chunk->all())
+                    ->where(fn ($query) => $query
+                        ->whereIn('author', ['contact', 'seller'])
+                        ->orWhere(fn ($call) => $call->where('author', 'system')->where('event', 'missed_call')->where('direction', IncomingMessage::IN)))
+                    ->groupBy('conversation_id')
+                    ->selectRaw('conversation_id, max(sent_at) as at')
+                    ->pluck('at', 'conversation_id');
+
+                foreach ($chunk as $id) {
+                    // Sem mensagem de pessoa (só o robô), o relógio parte do começo.
+                    $since = CarbonImmutable::parse($lastPerson[$id] ?? $open[$id], 'UTC');
+
+                    if ($cut->isClosed($since, $reference)) {
+                        $closed[] = $id;
+                    }
+                }
+            }
+
+            foreach (array_chunk($closed, 500) as $chunk) {
+                Conversation::whereIn('id', $chunk)->update(['status' => Conversation::CLOSED]);
+            }
+
+            return count($closed);
+        });
+    }
+
+    /**
+     * O "hoje" do corte: a mensagem mais recente da empresa no Owly, contando
+     * as que estão chegando.
+     *
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function reference(array $rows): CarbonImmutable
+    {
+        $stored = Message::max('sent_at');
+        $candidates = array_map(fn (array $row) => CarbonImmutable::instance($row['sent_at'])->utc(), $rows);
+
+        if ($stored !== null) {
+            $candidates[] = CarbonImmutable::parse($stored, 'UTC');
+        }
+
+        return $candidates === [] ? CarbonImmutable::now('UTC') : max($candidates);
     }
 
     /**
@@ -104,18 +160,5 @@ class EloquentConversationStore implements ConversationStore
         }
 
         return $ids;
-    }
-
-    private function refreshTotals(Conversation $conversation): void
-    {
-        $totals = Message::where('conversation_id', $conversation->id)
-            ->selectRaw('count(*) as total, min(sent_at) as first_at, max(sent_at) as last_at')
-            ->first();
-
-        $conversation->update([
-            'messages_count' => (int) $totals->total,
-            'first_message_at' => $totals->first_at,
-            'last_message_at' => $totals->last_at,
-        ]);
     }
 }

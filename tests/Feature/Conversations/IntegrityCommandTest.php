@@ -3,6 +3,7 @@
 namespace Tests\Feature\Conversations;
 
 use App\Domains\Accounts\Models\Organization;
+use App\Domains\Ai\Models\AiQuestion;
 use App\Domains\Conversations\Contracts\ConversationStore;
 use App\Domains\Conversations\Data\IncomingConversation;
 use App\Domains\Conversations\Data\IncomingMessage;
@@ -39,7 +40,8 @@ class IntegrityCommandTest extends TestCase
         $file = Storage::disk('local')->files('integrity')[0];
         $snapshot = json_decode((string) Storage::disk('local')->get($file), true);
 
-        $this->assertSame(['messages' => 5, 'contacts' => 2, 'conversations' => 2, 'empty_conversations' => 0], array_diff_key($snapshot['facts'], ['messages_hash' => true]));
+        $this->assertSame(['messages' => 5, 'contacts' => 2, 'conversations' => 2, 'empty_conversations' => 0, 'opened_by_company' => 0], array_diff_key($snapshot['facts'], ['messages_hash' => true, 'first_conversations' => true]));
+        $this->assertCount(2, $snapshot['facts']['first_conversations']);
         $this->assertSame(64, strlen($snapshot['facts']['messages_hash']));
         $this->assertSame(2, $snapshot['panel']['tudo']['conversations']);
 
@@ -82,6 +84,63 @@ class IntegrityCommandTest extends TestCase
 
         $this->artisan('owly:integrity', ['--empresa' => $this->organization->id, '--compare' => true])
             ->expectsOutputToContain('Mensagens com cliente diferente do da conversa: 1')
+            ->assertFailed();
+    }
+
+    public function test_atendimento_aberto_pela_empresa_no_meio_do_historico_reprova(): void
+    {
+        $this->inOrganization($this->organization, fn () => Conversation::query()->update(['opened_by' => 'company']));
+
+        $this->artisan('owly:integrity', ['--empresa' => $this->organization->id, '--snapshot' => true])
+            ->expectsOutputToContain('Atendimentos abertos por mensagem que não é do cliente (fora o primeiro do histórico): 2')
+            ->assertFailed();
+    }
+
+    public function test_corte_desatualizado_reprova(): void
+    {
+        // Uma mensagem do cliente uma semana depois, colada à mão no mesmo
+        // atendimento: o owly:recut separaria. A referência anda junto, e o
+        // atendimento do outro cliente, ainda aberto, também teria de fechar.
+        $this->inOrganization($this->organization, function (): void {
+            $conversation = Conversation::orderBy('id')->first();
+            Message::where('conversation_id', $conversation->id)->where('external_id', 'c')->update(['sent_at' => '2026-09-08 12:00:00']);
+            $conversation->update(['last_message_at' => '2026-09-08 12:00:00']);
+        });
+
+        $this->artisan('owly:integrity', ['--empresa' => $this->organization->id, '--snapshot' => true])
+            ->expectsOutputToContain('Clientes cujo corte mudaria se o owly:recut rodasse de novo: 2')
+            ->assertFailed();
+    }
+
+    public function test_atendimento_mais_antigo_com_outro_id_reprova(): void
+    {
+        $this->artisan('owly:integrity', ['--empresa' => $this->organization->id, '--snapshot' => true])->assertSuccessful();
+        $file = Storage::disk('local')->files('integrity')[0];
+        $snapshot = json_decode((string) Storage::disk('local')->get($file), true);
+        $snapshot['facts']['first_conversations'] = array_map(fn (int $id) => $id + 100, $snapshot['facts']['first_conversations']);
+        Storage::disk('local')->put($file, (string) json_encode($snapshot));
+
+        $this->artisan('owly:integrity', ['--empresa' => $this->organization->id, '--compare' => true])
+            ->expectsOutputToContain('Clientes cujo atendimento mais antigo não ficou com o id de antes: 2')
+            ->assertFailed();
+    }
+
+    public function test_pergunta_a_ia_fora_do_atendimento_da_mensagem_reprova(): void
+    {
+        $this->inOrganization($this->organization, function (): void {
+            [$first, $second] = Conversation::orderBy('id')->pluck('id')->all();
+            AiQuestion::create([
+                'conversation_id' => $second,
+                'message_id' => Message::where('conversation_id', $first)->value('id'),
+                'question' => 'Fechou?',
+                'provider' => 'gemini',
+                'model' => 'teste',
+                'status' => AiQuestion::DONE,
+            ]);
+        });
+
+        $this->artisan('owly:integrity', ['--empresa' => $this->organization->id, '--snapshot' => true])
+            ->expectsOutputToContain('Perguntas à IA fora do atendimento da mensagem ou em atendimento que não existe: 1')
             ->assertFailed();
     }
 

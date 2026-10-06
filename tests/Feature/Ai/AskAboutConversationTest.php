@@ -35,7 +35,8 @@ class AskAboutConversationTest extends TestCase
         $this->actingAs($this->user)->post('/importar', [
             'file' => new UploadedFile(WhatsAppZip::sample()->path(), 'conversas.zip', 'application/zip', null, true),
         ]);
-        $this->conversation = Conversation::whereHas('contact', fn ($q) => $q->where('phone', '5511988887777'))->sole();
+        // O primeiro atendimento do cliente: pedido, resposta da Ana e ligação perdida.
+        $this->conversation = Conversation::whereHas('contact', fn ($q) => $q->where('phone', '5511988887777'))->orderBy('first_message_at')->first();
     }
 
     public function test_sem_ia_conectada_a_conversa_mostra_o_convite(): void

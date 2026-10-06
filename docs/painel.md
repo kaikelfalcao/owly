@@ -2,13 +2,17 @@
 
 O que a Owly lê nas conversas e mostra ao dono. Cada número abre a lista das conversas que o formam (`/dashboard/{leitura}`). As regras ficam em `app/Domains/Insights/Rules`, uma por classe, com teste em `tests/Unit/Insights`.
 
+## Por atendimento
+
+As leituras contam atendimentos (docs/arquitetura.md, "Atendimentos"), não clientes: o cliente que voltou depois de um dia útil inteiro aparece de novo, e "sem resposta" ou "pior demora" podem aparecer mais de uma vez para ele. O orçamento ainda é lido dentro do atendimento: a venda fechada num atendimento seguinte só vai contar quando a oportunidade olhar o histórico inteiro do cliente.
+
 ## Período
 
 7 dias, 30 dias (padrão) ou tudo. O "hoje" é a mensagem mais recente da empresa, não a data do computador: quem só tem zip olha para os dias do zip (`Period`).
 
 ## Horário de atendimento
 
-Toda espera conta só o tempo com a empresa aberta (`BusinessHours`). O cliente que escreve às 19h da sexta e é atendido às 8h05 da segunda esperou 5 minutos, não um fim de semana.
+Toda espera conta só o tempo com a empresa aberta (`WorkingCalendar`, de Conta). O cliente que escreve às 19h da sexta e é atendido às 8h05 da segunda esperou 5 minutos, não um fim de semana.
 
 - O dono ajusta em **Minha conta › Horário** (`/conta/horario`): abertura e fechamento de cada dia, ou fechado.
 - Padrão, enquanto ninguém mexe: segunda a sexta das 8h às 18h, sábado das 8h às 12h, domingo fechado. O painel avisa que está usando o padrão.

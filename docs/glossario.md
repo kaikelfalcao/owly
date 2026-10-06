@@ -7,7 +7,9 @@ Uma palavra por conceito, igual na tela e no código. Conceito novo entra aqui a
 | Empresa                    | `Organization`   | quem usa a Owly; todo dado pertence a uma                              |
 | Dono                       | `User` (owner)   | a pessoa que entra na Owly; na primeira entrega, a única               |
 | Cliente                    | `Contact`        | quem escreve para a empresa pelo WhatsApp, identificado pelo telefone  |
-| Conversa                   | `Conversation`   | o histórico de mensagens com um cliente                                |
+| Conversa                   | histórico        | todas as mensagens com um cliente, atravessando os atendimentos        |
+| Atendimento                | `Conversation`   | trecho da conversa com começo e fim: abre quando o cliente escreve     |
+| Começou pela empresa       | `opened_by`      | atendimento aberto por mensagem da empresa (só o primeiro do cliente)  |
 | Mensagem                   | `Message`        | uma mensagem, do cliente ou da empresa                                 |
 | Vendedora                  | `Seller`         | quem responde pela empresa; na exportação, o nome em `*Nome:*`         |
 | Importação                 | `Import`         | um zip enviado e o que ele trouxe                                      |

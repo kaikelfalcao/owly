@@ -41,13 +41,17 @@ class DashboardTest extends TestCase
                 ->component('dashboard')
                 ->where('hasData', true)
                 ->where('period.key', '30')
-                ->where('totals.conversations', 2)
+                // Por atendimento: o Cliente Teste tem dois.
+                ->where('totals.conversations', 3)
                 ->where('unanswered', 1)
                 ->where('response.medianSeconds', 1050)
                 ->where('response.answered', 2)
                 ->where('outOfHours.turns', 1)
                 ->where('quotes.sent', 2)
-                ->where('quotes.stalled', 1)
+                // O "pode fazer" de sexta caiu no segundo atendimento: o
+                // orçamento do primeiro fica parado até a oportunidade olhar o
+                // histórico do cliente inteiro (PR 5 da especificação).
+                ->where('quotes.stalled', 2)
                 ->where('sales', 1)
                 ->where('topics.0.key', 'cartao')
                 ->where('sellers.0.name', 'Ana')
