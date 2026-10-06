@@ -8,15 +8,16 @@ use App\Domains\Conversations\Contracts\ConversationFacts;
 use App\Domains\Conversations\Contracts\ConversationStore;
 use App\Domains\Imports\Contracts\Importer;
 use App\Domains\Imports\Data\ImportFailed;
+use App\Domains\Imports\Events\ImportFinished;
 use App\Domains\Imports\Models\Import;
 use App\Domains\Imports\Rules\DateGaps;
 use App\Models\User;
 use App\Platform\Audit\Audit;
 use App\Platform\Notifications\Notice;
+use App\Platform\Queue\OneAtATime;
 use App\Platform\Telemetry\Telemetry;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -51,8 +52,9 @@ class ProcessImport implements ShouldQueue
         return [
             new ForOrganization($this->organizationId),
             // Duas importações da mesma empresa ao mesmo tempo cortariam os
-            // mesmos clientes em paralelo: a segunda espera a primeira.
-            (new WithoutOverlapping("import:organization:{$this->organizationId}"))->releaseAfter(30)->expireAfter($this->timeout + 60),
+            // mesmos clientes em paralelo: a segunda espera a primeira. O
+            // recálculo das oportunidades usa a mesma trava.
+            OneAtATime::organization($this->organizationId, $this->timeout),
         ];
     }
 
@@ -142,6 +144,9 @@ class ProcessImport implements ShouldQueue
                 body: self::summary($stats),
                 url: '/importar',
             ));
+            // Quem lê as conversas (oportunidades) recalcula os clientes desta importação.
+            ImportFinished::dispatch($import->organization_id, $import->id);
+
             $span->setAttribute('owly.messages_new', $stats['messages_new']);
             $this->measure($telemetry, $started, 'done');
         } catch (ImportFailed $e) {

@@ -33,6 +33,14 @@ interface ConversationFacts
     public function histories(int $organizationId, array $contactIds): iterable;
 
     /**
+     * Os clientes com mensagem gravada; com $importId, só os que receberam
+     * mensagem nova naquela importação.
+     *
+     * @return list<int>
+     */
+    public function contactsWithMessages(int $organizationId, ?int $importId = null): array;
+
+    /**
      * @param  list<int>  $conversationIds
      * @return array<int, ConversationSummary> por id; atendimento que não existe fica de fora
      */

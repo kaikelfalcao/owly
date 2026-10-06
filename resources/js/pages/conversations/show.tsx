@@ -17,6 +17,8 @@ import { useState } from 'react';
 import AskAi from '@/components/ask-ai';
 import type { AiPanelProps, FocusedMessage } from '@/components/ask-ai';
 import EpisodeStatus from '@/components/episode-status';
+import Opportunities from '@/components/opportunities';
+import type { OpportunitiesPanelProps } from '@/components/opportunities';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { insightCrumbs } from '@/lib/insights';
@@ -58,7 +60,7 @@ type Props = {
         nextId: number | null;
     };
     messages: Message[];
-    panels: { ai?: AiPanelProps };
+    panels: { ai?: AiPanelProps; opportunities?: OpportunitiesPanelProps };
     /** A lista ou a leitura do painel de onde a pessoa veio. */
     origin: InsightOrigin | { busca?: string; page?: string } | null;
 };
@@ -156,6 +158,12 @@ export default function ConversationShow({
                             </div>
                         )}
                     </aside>
+                    {panels.opportunities && (
+                        <Opportunities
+                            conversationId={conversation.id}
+                            panel={panels.opportunities}
+                        />
+                    )}
                     {ai && (
                         <AskAi
                             conversationId={conversation.id}
@@ -289,7 +297,8 @@ function Bubble({
 
         return (
             <p
-                className="mx-auto flex items-center gap-1.5 text-xs text-muted-foreground"
+                id={`m${message.id}`}
+                className="mx-auto flex scroll-mt-20 items-center gap-1.5 text-xs text-muted-foreground"
                 title={dateTime(message.sentAt, timeZone)}
             >
                 <Icon className="size-3.5" />
@@ -306,7 +315,13 @@ function Bubble({
     const bot = message.author === 'bot';
 
     return (
-        <div className={cn('flex', out ? 'justify-end' : 'justify-start')}>
+        <div
+            id={`m${message.id}`}
+            className={cn(
+                'flex scroll-mt-20 target:[&>div]:ring-2 target:[&>div]:ring-highlight',
+                out ? 'justify-end' : 'justify-start',
+            )}
+        >
             <div
                 className={cn(
                     'group max-w-[85%] rounded-2xl px-3 py-2 text-sm sm:max-w-[70%]',

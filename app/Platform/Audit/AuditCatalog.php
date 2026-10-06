@@ -37,6 +37,10 @@ class AuditCatalog
         'ai.connection_default' => ['Trocou a IA padrão', Severity::Normal],
         'ai.connection_removed' => ['Removeu uma conexão de IA', Severity::Important],
         'ai.question_asked' => ['Perguntou à IA sobre uma conversa', Severity::Normal],
+        'insights.opportunity_won' => ['Marcou uma oportunidade como ganha', Severity::Normal],
+        'insights.opportunity_lost' => ['Marcou uma oportunidade como perdida', Severity::Normal],
+        'insights.opportunity_discarded' => ['Marcou que não era oportunidade', Severity::Normal],
+        'insights.opportunity_reopened' => ['Abriu de novo uma oportunidade', Severity::Normal],
     ];
 
     /**
@@ -52,6 +56,7 @@ class AuditCatalog
         'ai_connection' => ['App\\Domains\\Ai\\Models\\AiConnection', 'Conexão de IA'],
         'ai_question' => ['App\\Domains\\Ai\\Models\\AiQuestion', 'Pergunta à IA'],
         'organization' => ['App\\Domains\\Accounts\\Models\\Organization', 'Empresa'],
+        'opportunity' => ['App\\Domains\\Insights\\Models\\Opportunity', 'Oportunidade'],
     ];
 
     /** Nomes dos campos que aparecem em "Alterações". */
@@ -67,6 +72,7 @@ class AuditCatalog
         'sun' => 'Domingo',
         'national_holidays' => 'Feriados nacionais',
         'holidays' => 'Feriados da empresa (quantidade)',
+        'status' => 'Situação',
     ];
 
     /** Nomes dos detalhes gravados em `meta`. */
@@ -87,6 +93,7 @@ class AuditCatalog
         'ok' => 'Respondeu',
         'input_tokens' => 'Tokens enviados',
         'output_tokens' => 'Tokens recebidos',
+        'reason' => 'Motivo da perda (código)',
     ];
 
     public static function label(string $action): string

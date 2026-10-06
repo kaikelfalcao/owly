@@ -5,6 +5,7 @@ use App\Domains\Ai\Http\AiQuestionController;
 use App\Domains\Conversations\Http\ConversationController;
 use App\Domains\Imports\Http\ImportController;
 use App\Domains\Insights\Http\DashboardController;
+use App\Domains\Insights\Http\OpportunityController;
 use App\Platform\Http\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +20,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('conversas/{conversation}', [ConversationController::class, 'show'])->whereNumber('conversation')->name('conversations.show');
 
     Route::post('conversas/{conversation}/perguntas', [AiQuestionController::class, 'store'])->whereNumber('conversation')->middleware('throttle:20,1')->name('ai.questions.store');
+
+    Route::post('oportunidades/{opportunity}/ganhou', [OpportunityController::class, 'win'])->whereNumber('opportunity')->name('opportunities.win');
+    Route::post('oportunidades/{opportunity}/perdeu', [OpportunityController::class, 'lose'])->whereNumber('opportunity')->name('opportunities.lose');
+    Route::post('oportunidades/{opportunity}/descartar', [OpportunityController::class, 'discard'])->whereNumber('opportunity')->name('opportunities.discard');
+    Route::post('oportunidades/{opportunity}/reabrir', [OpportunityController::class, 'reopen'])->whereNumber('opportunity')->name('opportunities.reopen');
 
     Route::get('ia', [AiConnectionController::class, 'index'])->name('ai.index');
     Route::get('ia/conectar', [AiConnectionController::class, 'create'])->name('ai.create');
