@@ -28,8 +28,9 @@ class ConversationQueries
     {
         $query = Conversation::query()
             ->where('conversations.organization_id', $organizationId)
-            ->with('contact')
-            ->orderByDesc('last_message_at');
+            ->with(['contact', 'seller'])
+            ->orderByDesc('last_message_at')
+            ->orderByDesc('id');
 
         if ($search !== null && trim($search) !== '') {
             $term = trim($search);
@@ -46,6 +47,7 @@ class ConversationQueries
 
         $page = $query->paginate(30)->withQueryString();
         $last = $this->lastMessages($page->getCollection()->pluck('id')->all());
+        $episodes = $this->episodes($page->getCollection()->pluck('contact_id')->unique()->values()->all());
 
         return $page->through(fn (Conversation $conversation) => [
             'id' => $conversation->id,
@@ -54,6 +56,7 @@ class ConversationQueries
             'messagesCount' => $conversation->messages_count,
             'lastMessageAt' => $conversation->last_message_at?->toIso8601String(),
             'lastMessage' => isset($last[$conversation->id]) ? $this->preview($last[$conversation->id]) : null,
+            ...$this->episode($conversation, $episodes[$conversation->contact_id] ?? [$conversation->id]),
         ]);
     }
 
@@ -63,8 +66,11 @@ class ConversationQueries
     public function show(int $organizationId, int $conversationId): array
     {
         $conversation = Conversation::where('organization_id', $organizationId)
-            ->with('contact')
+            ->with(['contact', 'seller'])
             ->findOrFail($conversationId);
+
+        $siblings = $this->episodes([$conversation->contact_id])[$conversation->contact_id] ?? [$conversation->id];
+        $index = array_search($conversation->id, $siblings, true);
 
         $messages = $conversation->messages()
             ->with('seller')
@@ -88,6 +94,9 @@ class ConversationQueries
                 'messagesCount' => $conversation->messages_count,
                 'fromContact' => $messages->where('direction', 'in')->count(),
                 'sellers' => $sellers,
+                ...$this->episode($conversation, $siblings),
+                'previousId' => $siblings[$index - 1] ?? null,
+                'nextId' => $siblings[$index + 1] ?? null,
             ],
             'messages' => $messages->map(fn (Message $message) => [
                 'id' => $message->id,
@@ -101,6 +110,44 @@ class ConversationQueries
                 'event' => $message->event,
                 'quoted' => $message->quoted,
             ])->values(),
+        ];
+    }
+
+    /**
+     * Os atendimentos de cada cliente, do mais antigo ao mais recente.
+     *
+     * @param  list<int>  $contactIds
+     * @return array<int, list<int>> cliente => ids dos atendimentos
+     */
+    private function episodes(array $contactIds): array
+    {
+        if ($contactIds === []) {
+            return [];
+        }
+
+        $episodes = [];
+
+        foreach (Conversation::whereIn('contact_id', $contactIds)->orderBy('first_message_at')->orderBy('id')->get(['id', 'contact_id']) as $conversation) {
+            $episodes[$conversation->contact_id][] = $conversation->id;
+        }
+
+        return $episodes;
+    }
+
+    /**
+     * Situação, responsável e "atendimento 2 de 3".
+     *
+     * @param  list<int>  $siblings  os atendimentos do cliente, em ordem
+     * @return array<string, mixed>
+     */
+    private function episode(Conversation $conversation, array $siblings): array
+    {
+        return [
+            'status' => $conversation->status,
+            'openedBy' => $conversation->opened_by,
+            'seller' => $conversation->seller?->name,
+            'position' => (int) array_search($conversation->id, $siblings, true) + 1,
+            'episodes' => count($siblings),
         ];
     }
 

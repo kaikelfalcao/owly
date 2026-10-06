@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import EpisodeStatus from '@/components/episode-status';
 import Heading from '@/components/heading';
 import OwlyMascot from '@/components/owly-mascot';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,11 @@ type Row = {
     messagesCount: number;
     lastMessageAt: string | null;
     lastMessage: { who: string; text: string } | null;
+    status: 'open' | 'closed';
+    openedBy: 'contact' | 'company';
+    seller: string | null;
+    position: number;
+    episodes: number;
 };
 
 type Page<T> = {
@@ -32,7 +38,7 @@ type Props = {
     search: string | null;
 };
 
-/** Conversas: uma por cliente, a mais recente primeiro. */
+/** Um atendimento por linha, o mais recente primeiro. */
 export default function Conversations({ conversations, search }: Props) {
     const timeZone = usePage().props.auth.organization?.timezone;
     const [term, setTerm] = useState(search ?? '');
@@ -60,6 +66,13 @@ export default function Conversations({ conversations, search }: Props) {
     }, [term]);
 
     const empty = conversations.total === 0;
+    // A conversa aberta volta para esta mesma busca e página.
+    const back = {
+        ...(search ? { busca: search } : {}),
+        ...(conversations.current_page > 1
+            ? { page: String(conversations.current_page) }
+            : {}),
+    };
 
     return (
         <>
@@ -67,7 +80,7 @@ export default function Conversations({ conversations, search }: Props) {
             <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-4 md:p-6">
                 <Heading
                     title="Conversas"
-                    description="Uma conversa por cliente, com tudo o que veio dos zips."
+                    description="Um atendimento por linha. O cliente que volta a escrever depois de um dia útil inteiro ganha outro."
                 />
 
                 <div className="relative">
@@ -103,7 +116,7 @@ export default function Conversations({ conversations, search }: Props) {
                         {conversations.data.map((row) => (
                             <li key={row.id}>
                                 <Link
-                                    href={show(row.id)}
+                                    href={show(row.id, { query: back })}
                                     className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
                                 >
                                     <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
@@ -150,6 +163,27 @@ export default function Conversations({ conversations, search }: Props) {
                                                 </>
                                             )}
                                         </p>
+                                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                                            <EpisodeStatus
+                                                status={row.status}
+                                            />
+                                            {row.episodes > 1 && (
+                                                <span>
+                                                    Atendimento {row.position}{' '}
+                                                    de {row.episodes}
+                                                </span>
+                                            )}
+                                            {row.openedBy === 'company' && (
+                                                <span>
+                                                    Começou pela empresa
+                                                </span>
+                                            )}
+                                            <span className="truncate">
+                                                {row.seller
+                                                    ? `Responsável: ${row.seller}`
+                                                    : 'Ninguém respondeu'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </Link>
                             </li>
@@ -163,7 +197,7 @@ export default function Conversations({ conversations, search }: Props) {
                             Página {conversations.current_page} de{' '}
                             {conversations.last_page} ·{' '}
                             {conversations.total.toLocaleString('pt-BR')}{' '}
-                            conversas
+                            atendimentos
                         </span>
                         <div className="flex gap-2">
                             <Button

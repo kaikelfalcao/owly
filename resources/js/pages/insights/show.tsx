@@ -50,6 +50,12 @@ const PERIOD_LABEL: Record<string, string> = {
 export default function InsightShow(props: Props) {
     const timeZone = usePage().props.auth.organization?.timezone;
     const { conversations, total, period } = props;
+    // A conversa aberta daqui volta para esta leitura, no mesmo período.
+    const back = {
+        painel: props.insight,
+        periodo: period.key,
+        ...(props.filter ? { filtro: props.filter } : {}),
+    };
 
     return (
         <>
@@ -76,7 +82,9 @@ export default function InsightShow(props: Props) {
                         {conversations.map((row) => (
                             <li key={row.id}>
                                 <Link
-                                    href={conversation(row.id)}
+                                    href={conversation(row.id, {
+                                        query: back,
+                                    })}
                                     className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
                                 >
                                     <div className="min-w-0 flex-1">
